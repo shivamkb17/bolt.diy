@@ -56,10 +56,11 @@ git clone https://github.com/stackblitz/bolt.new.git
 pnpm install
 ```
 
-3. Create a `.env.local` file in the root directory and add your Anthropic API key:
+3. Create a `.env.local` file in the root directory and add your Anthropic or OpenRouter API key:
 
 ```
 ANTHROPIC_API_KEY=XXX
+OPENROUTER_API_KEY=XXX
 ```
 
 Optionally, you can set the debug level:

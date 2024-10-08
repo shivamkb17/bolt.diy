@@ -1,6 +1,6 @@
 import { streamText as _streamText, convertToCoreMessages } from 'ai';
-import { getAPIKey } from '~/lib/.server/llm/api-key';
-import { getAnthropicModel } from '~/lib/.server/llm/model';
+import { getAPIKeys } from '~/lib/.server/llm/api-key';
+import { getModel } from '~/lib/.server/llm/model';
 import { MAX_TOKENS } from './constants';
 import { getSystemPrompt } from './prompts';
 
@@ -22,8 +22,9 @@ export type Messages = Message[];
 export type StreamingOptions = Omit<Parameters<typeof _streamText>[0], 'model'>;
 
 export function streamText(messages: Messages, env: Env, options?: StreamingOptions) {
+  const apiKeys = getAPIKeys(env);
   return _streamText({
-    model: getAnthropicModel(getAPIKey(env)),
+    model: getModel(apiKeys),
     system: getSystemPrompt(),
     maxTokens: MAX_TOKENS,
     headers: {
