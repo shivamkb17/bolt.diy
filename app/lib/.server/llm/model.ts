@@ -24,5 +24,5 @@ export function getOpenRouterModel(apiKey: string) {
     apiKey,
   });
 
-  return openRouter('anthropic/claude-3.5-sonnet:beta');
+  return openRouter('nousresearch/hermes-3-llama-3.1-405b:free');
 }
