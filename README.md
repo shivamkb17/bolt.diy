@@ -1,5 +1,4 @@
-[![Bolt.new: AI-Powered Full-Stack Web Development in the Browser](![image](https://github.com/user-attachments/assets/e701d50d-89f1-44e5-8e74-1180c7989a1b)
-)](https://bolt.aidark.net)
+[![image](https://github.com/user-attachments/assets/b802c6d4-c78e-4ede-b8bd-c0079c5ed217)](https://bolt.aidark.net)
 
 # [Bolt.new](https://bolt.aidark.net): AI-Powered Full-Stack Web Development in the Browser
 
