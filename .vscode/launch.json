@@ -11,6 +11,18 @@
             "port": 9222,
             "webRoot": "${workspaceFolder}",
             "timeout": 30000
-        }
+        },
+    {
+        "type": "node",
+        "request": "launch",
+        "name": "Run Development Server",
+        "runtimeExecutable": "npm",
+        "runtimeArgs": [
+            "run",
+            "dev"
+        ],
+        "port": 3000,
+        "timeout": 30000
+    }
     ]
 }

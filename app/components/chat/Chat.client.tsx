@@ -92,7 +92,7 @@ export const ChatImpl = memo(({ initialMessages, storeMessageHistory }: ChatProp
     },
     initialMessages,
     body: {
-      model: provider 
+      provider: provider 
     },
   });
 

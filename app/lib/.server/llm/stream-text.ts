@@ -24,10 +24,11 @@ export type StreamingOptions = Omit<Parameters<typeof _streamText>[0], 'model'>;
 
 
 export function streamText(messages: Messages, env: Env, provider: Provider, options?: StreamingOptions) {
-  const apiKey = getAPIKeys(env);
   
+  const apiKey = getAPIKeys(env);
+  const apiKeyToUse = provider.apiKey || apiKey.openRouter;
   return _streamText({
-    model: getModel('openrouter', provider.apiKey || apiKey.openRouter, provider.model),
+    model: getModel('openrouter', apiKeyToUse, provider.model),
 
     system: getSystemPrompt(),
     messages: convertToCoreMessages(messages.map(message => ({

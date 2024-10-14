@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '@nanostores/react';
 import { providerStore, setProvider, type Provider } from '~/lib/stores/provider';
 import '~/styles/index.scss';
@@ -6,24 +6,44 @@ import '~/styles/index.scss';
 export function ProviderSelector() {
   const currentProvider = useStore(providerStore);
   const [inputValue, setInputValue] = useState(currentProvider.model);
+  const [providers, setProviders] = useState<string[]>([]);
+  const [apiKey, setApiKey] = useState(''); // New state for API key
+
+  useEffect(() => {
+    const fetchProviders = async () => {
+      try {
+        const response = await fetch('https://openrouter.ai/api/v1/models');
+        const data = await response.json();
+        setProviders(data.data.map(a=>a.id));
+      } catch (error) {
+        console.error('Error fetching providers:', error);
+      }
+    };
+
+    fetchProviders();
+  }, []);
 
   const handleProviderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setInputValue(value);
   };
 
-  const providers = [
-    'Anthropic (Claude)',
-    'Together AI (meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo)',
-    'Together AI (meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo)',
-    'Together AI (mistralai/Mixtral-8x7B-Instruct-v0.1)',
-    'OpenRouter (openai/gpt-3.5-turbo)',
-    'OpenRouter (anthropic/claude-2)',
-    'OpenRouter (google/palm-2-chat-bison)',
-  ];
+  const handleApiKeyButtonClick = () => {
+    const value = prompt("Enter OpenRouter API Key"); // Prompt user for API key
+    if (value) {
+      setApiKey(value); // Update API key state if a value is provided
+    }
+  };
 
   return (
-    <div className="relative w-[250px]">
+    <div className="flex space-x-2"> {/* Changed to flex for horizontal layout */}
+      {/* Button to set API key */}
+      <button
+        onClick={handleApiKeyButtonClick}
+        className="w-[120px] px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none"
+      >
+        Set API Key
+      </button>
       <input
         list="providers"
         value={inputValue}
@@ -31,7 +51,7 @@ export function ProviderSelector() {
         onMouseDown={() => {
           setInputValue(''); // Clear input on click
         }}
-        className="w-full px-3 py-2 bg-transparent border border-white/20 rounded text-white hover:border-white/40 focus:border-white/60 outline-none"
+        className="w-[300px] px-3 py-2 bg-transparent border border-white/20 rounded text-white hover:border-white/40 focus:border-white/60 outline-none" // Increased width for larger input
       />
       <datalist id="providers">
         {providers.map((provider) => (
