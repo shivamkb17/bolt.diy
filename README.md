@@ -1,4 +1,9 @@
-[![image](https://github.com/user-attachments/assets/b802c6d4-c78e-4ede-b8bd-c0079c5ed217)](https://bolt.aidark.net)
+[![image](https://github.com/user-attachments/assets/4990e943-7f71-4b95-bc8a-57def9113860)](https://bolt.aidark.net)
+
+
+
+https://github.com/user-attachments/assets/625d890c-b277-42de-8a32-6e4f229d6e76
+
 
 # [Bolt.new](https://bolt.aidark.net): AI-Powered Full-Stack Web Development in the Browser
 
