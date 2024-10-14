@@ -84,7 +84,7 @@ export const ChatImpl = memo(({ initialMessages, storeMessageHistory }: ChatProp
     api: '/api/chat',
     onError: (error) => {
       logger.error('Request failed\n\n', error);
-      logEvent('bolt/error', { error: error.message });
+      logEvent('sendmessage/error', { error: error.message });
       toast.error('There was an error processing your request');
     },
     onFinish: () => {
@@ -154,7 +154,7 @@ export const ChatImpl = memo(({ initialMessages, storeMessageHistory }: ChatProp
 
     setChatStarted(true);
   };
-  function logEvent(name: string, extra: any) {
+  function logEvent(name: string, extra: any={}) {
     let query = {
       add: 1, unique: localStorage.getItem(name) ? 0 : 1, name: 'bolt/' + name, url: location.href, extra
     };
@@ -175,7 +175,7 @@ export const ChatImpl = memo(({ initialMessages, storeMessageHistory }: ChatProp
     chatStore.setKey('aborted', false);
 
     runAnimation();
-    logEvent('sendmessage', { input: _input });
+    logEvent('sendmessage');
     if (fileModifications !== undefined) {
       const diff = fileModificationsToHTML(fileModifications);
 

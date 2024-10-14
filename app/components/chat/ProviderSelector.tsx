@@ -13,8 +13,8 @@ export function ProviderSelector() {
     const fetchProviders = async () => {
       try {
         const response = await fetch('https://openrouter.ai/api/v1/models');
-        const data = await response.json();
-        setProviders(data.data.map(a=>a.id));
+        const data = await response.json() as any;
+        setProviders(data.data.map((a: any) => a.id));
       } catch (error) {
         console.error('Error fetching providers:', error);
       }
@@ -26,12 +26,14 @@ export function ProviderSelector() {
   const handleProviderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setInputValue(value);
+    setProvider({ model: value, apiKey: apiKey }); // Update provider in store when selection changes
   };
 
   const handleApiKeyButtonClick = () => {
-    const value = prompt("Enter OpenRouter API Key"); // Prompt user for API key
+    const value = prompt("Enter API Key"); // Prompt user for API key
     if (value) {
       setApiKey(value); // Update API key state if a value is provided
+      setProvider({ model: inputValue, apiKey: value }); // Update provider in store when API key is set
     }
   };
 
