@@ -5,6 +5,7 @@ import type { Message } from 'ai';
 import { toast } from 'react-toastify';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { getMessages, getNextId, getUrlId, openDatabase, setMessages } from './db';
+import * as FileSystem from './fileSystem';
 
 export interface ChatHistoryItem {
   id: string;
@@ -28,6 +29,7 @@ export function useChatHistory() {
   const [initialMessages, setInitialMessages] = useState<Message[]>([]);
   const [ready, setReady] = useState<boolean>(false);
   const [urlId, setUrlId] = useState<string | undefined>();
+  const [ignoreFolderId, setIgnoreFolderId] = useState<boolean>(false);
 
   useEffect(() => {
     if (!db) {
@@ -40,9 +42,19 @@ export function useChatHistory() {
       return;
     }
 
-    if (mixedId) {
-      getMessages(db, mixedId)
-        .then((storedMessages) => {
+    async function initializeChat() {
+      let chatIdToUse = mixedId;
+
+      if (!ignoreFolderId) {
+        const boltNewChatId = await FileSystem.readBoltNewFile();
+        if (boltNewChatId) {
+          chatIdToUse = boltNewChatId;
+        }
+      }
+
+      if (chatIdToUse) {
+        try {
+          const storedMessages = await getMessages(db, chatIdToUse);
           if (storedMessages && storedMessages.messages.length > 0) {
             setInitialMessages(storedMessages.messages);
             setUrlId(storedMessages.urlId);
@@ -51,18 +63,22 @@ export function useChatHistory() {
           } else {
             navigate(`/`, { replace: true });
           }
+        } catch (error) {
+          toast.error((error as Error).message);
+        }
+      }
 
-          setReady(true);
-        })
-        .catch((error) => {
-          toast.error(error.message);
-        });
+      setReady(true);
     }
-  }, []);
+
+    initializeChat();
+  }, [mixedId, ignoreFolderId]);
 
   return {
     ready: !mixedId || ready,
     initialMessages,
+    ignoreFolderId,
+    setIgnoreFolderId,
     storeMessageHistory: async (messages: Message[]) => {
       if (!db || messages.length === 0) {
         return;
