@@ -1,12 +1,11 @@
 import { atom } from "nanostores";
 import { createScopedLogger } from "~/utils/logger";
 import * as path from "path-browserify";
+import { useNavigate } from "@remix-run/react";
 
 const logger = createScopedLogger("FileSystem");
 
-export const selectedDirectoryHandle = atom<FileSystemDirectoryHandle | null>(
-  null,
-);
+export const selectedDirectoryHandle = atom<FileSystemDirectoryHandle | null>(null);
 export const fileChanges = atom<Map<string, string>>(new Map());
 
 interface FileContent {
@@ -15,7 +14,7 @@ interface FileContent {
 }
 
 export async function createProjectFiles(
-  chatItem: ChatHistoryItem,
+  chatItem: ChatHistoryItem
 ): Promise<void> {
   const directoryHandle = await getDirectoryHandle();
 
@@ -30,7 +29,7 @@ export async function createProjectFiles(
   for (const message of chatItem.messages) {
     if (message.role === "assistant") {
       const matches = message.content.matchAll(
-        /<boltAction type="file" filePath="([^"]+)">([\s\S]*?)<\/boltAction>/g,
+        /<boltAction type="file" filePath="([^"]+)">([\s\S]*?)<\/boltAction>/g
       );
 
       for (const match of matches) {
@@ -53,45 +52,62 @@ export async function createProjectFiles(
   }
 }
 
-export async function selectDirectory(): Promise<void> {
+export async function selectDirectory(): Promise<string | null> {
   try {
     const directoryHandle = await window.showDirectoryPicker();
     selectedDirectoryHandle.set(directoryHandle);
     localStorage.setItem("selectedDirectoryPath", directoryHandle.name);
     logger.info(`Directory selected: ${directoryHandle.name}`);
+
+    // Check for existing .boltnew file
+    try {
+      const boltNewContent = await readFile(".boltnew");
+      const { chatId } = JSON.parse(boltNewContent);
+      
+      // Check for corresponding .boltnew.json file
+      try {
+        await readBoltNewJson(chatId);
+        return chatId; // Return the chatId if both files exist
+      } catch (error) {
+        logger.warn(`No ${chatId}.boltnew.json file found`);
+      }
+    } catch (error) {
+      logger.info("No existing .boltnew file found");
+    }
+
+    return null; // Return null if no existing chat was found
   } catch (error) {
     logger.error("Error selecting directory:", error);
+    return null;
   }
 }
 
-export async function getDirectoryHandle(): Promise<
-  FileSystemDirectoryHandle | null
-> {
+export async function getDirectoryHandle(): Promise<FileSystemDirectoryHandle | null> {
   const currentHandle = selectedDirectoryHandle.get();
 
-  if (currentHandle) {
-    return currentHandle;
+if (currentHandle) {
+  return currentHandle;
+}
+
+const savedPath = localStorage.getItem("selectedDirectoryPath");
+
+if (savedPath) {
+  try {
+    const handle = await window.showDirectoryPicker({ startIn: savedPath });
+    selectedDirectoryHandle.set(handle);
+
+    return handle;
+  } catch (error) {
+    console.error("Error retrieving saved directory:", error);
   }
+}
 
-  const savedPath = localStorage.getItem("selectedDirectoryPath");
-
-  if (savedPath) {
-    try {
-      const handle = await window.showDirectoryPicker({ startIn: savedPath });
-      selectedDirectoryHandle.set(handle);
-
-      return handle;
-    } catch (error) {
-      console.error("Error retrieving saved directory:", error);
-    }
-  }
-
-  return null;
+return null;
 }
 
 export async function writeFile(
   filePath: string,
-  content: string,
+  content: string
 ): Promise<void> {
   const directoryHandle = await getDirectoryHandle();
 
@@ -131,7 +147,7 @@ export async function writeFile(
 
 export async function updateFile(
   filePath: string,
-  content: string,
+  content: string
 ): Promise<void> {
   try {
     await writeFile(filePath, content);
@@ -160,13 +176,6 @@ export async function readFile(name: string): Promise<string> {
   }
 }
 
-/*
- * export async function createBoltNewFile(chatId: string): Promise<void> {
- * const content = JSON.stringify({ chatId });
- * await writeFile('.boltnew', content);
- * }
- */
-
 export async function checkForFileChanges(): Promise<void> {
   const directoryHandle = await getDirectoryHandle();
 
@@ -179,7 +188,7 @@ export async function checkForFileChanges(): Promise<void> {
 
     async function traverseDirectory(
       dirHandle: FileSystemDirectoryHandle,
-      currentPath: string = "",
+      currentPath: string = ""
     ) {
       for await (const entry of dirHandle.values()) {
         const entryPath = currentPath
@@ -227,7 +236,7 @@ export async function readBoltNewFile(): Promise<string | null> {
 
 export async function writeBoltNewJson(
   chatId: string,
-  chatItem: ChatHistoryItem,
+  chatItem: ChatHistoryItem
 ): Promise<void> {
   const fileName = `${chatId}.boltnew.json`;
   const content = JSON.stringify(chatItem, null, 2);
@@ -235,7 +244,7 @@ export async function writeBoltNewJson(
 }
 
 export async function readBoltNewJson(
-  chatId: string,
+  chatId: string
 ): Promise<ChatHistoryItem | null> {
   try {
     const fileName = `${chatId}.boltnew.json`;
