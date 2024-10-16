@@ -54,14 +54,31 @@ export function useChatHistory() {
 
       if (chatIdToUse) {
         try {
-          const storedMessages = await getMessages(db, chatIdToUse);
-          if (storedMessages && storedMessages.messages.length > 0) {
-            setInitialMessages(storedMessages.messages);
-            setUrlId(storedMessages.urlId);
-            description.set(storedMessages.description);
-            chatId.set(storedMessages.id);
+          // First, try to get the chat history from the local folder
+          const localChatItem = await FileSystem.readBoltNewJson(chatIdToUse);
+
+          if (localChatItem && localChatItem.messages.length > 0) {
+            setInitialMessages(localChatItem.messages);
+            setUrlId(localChatItem.urlId);
+            description.set(localChatItem.description);
+            chatId.set(localChatItem.id);
+
+            // Update the files in the workbench with the latest content from the local folder
+            await FileSystem.createProjectFiles(localChatItem);
           } else {
-            navigate(`/`, { replace: true });
+            // If not found in the local folder, fallback to IndexedDB
+            const storedMessages = await getMessages(db, chatIdToUse);
+            if (storedMessages && storedMessages.messages.length > 0) {
+              setInitialMessages(storedMessages.messages);
+              setUrlId(storedMessages.urlId);
+              description.set(storedMessages.description);
+              chatId.set(storedMessages.id);
+
+              // Update the local folder with the content from IndexedDB
+              await FileSystem.createProjectFiles(storedMessages);
+            } else {
+              navigate(`/`, { replace: true });
+            }
           }
         } catch (error) {
           toast.error((error as Error).message);
@@ -107,17 +124,24 @@ export function useChatHistory() {
         }
       }
 
-      await setMessages(db, chatId.get() as string, messages, urlId, description.get());
+      const chatItem: ChatHistoryItem = {
+        id: chatId.get() as string,
+        urlId,
+        description: description.get(),
+        messages,
+        timestamp: new Date().toISOString(),
+      };
+
+      await setMessages(db, chatItem.id, messages, urlId, description.get());
+
+      // Update the local folder with the latest chat history
+      await FileSystem.writeBoltNewJson(chatItem.id, chatItem);
+      await FileSystem.createProjectFiles(chatItem);
     },
   };
 }
 
 function navigateChat(nextId: string) {
-  /**
-   * FIXME: Using the intended navigate function causes a rerender for <Chat /> that breaks the app.
-   *
-   * `navigate(`/chat/${nextId}`, { replace: true });`
-   */
   const url = new URL(window.location.href);
   url.pathname = `/chat/${nextId}`;
 
