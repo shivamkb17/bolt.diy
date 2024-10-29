@@ -56,12 +56,7 @@ export const Preview = memo(() => {
   const [selectedMethod, setSelectedMethod] = useState<string>('GET');
   const [hasChanges, setHasChanges] = useState(false);
 
-  console.log('nodes', nodes);
-  console.log('edges', edges);
-
   useEffect(() => {
-    console.log('nodes changed in component', nodes);
-    console.log('edges changed in component', edges);
     setNodes([...nodes]);
     setEdges([...edges]);
   }, [nodes, edges]);

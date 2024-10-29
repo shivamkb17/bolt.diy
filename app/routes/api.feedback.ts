@@ -37,16 +37,19 @@ export async function action(args: ActionFunctionArgs) {
     );
   }
 
-  await sendToSlack({
-    userId: user.userId,
-    userName: user.firstName + ' ' + user.lastName,
-    userEmail: user.email,
-    feedback: {
-      deploymentRating: deploymentRating.toString(),
-      apiGenerationRating: apiGenerationRating.toString(),
-      toolUsageFrequency: toolUsageFrequency.toString(),
+  await sendToSlack(
+    {
+      userId: user.userId,
+      userName: user.firstName + ' ' + user.lastName,
+      userEmail: user.email,
+      feedback: {
+        deploymentRating: deploymentRating.toString(),
+        apiGenerationRating: apiGenerationRating.toString(),
+        toolUsageFrequency: toolUsageFrequency.toString(),
+      },
     },
-  });
+    context.cloudflare.env.SLACK_WEBHOOK_URL,
+  );
 
   // TODO: Determine if we should combine these into a single call
   await increaseQuota(context.cloudflare.env, user.userId, FEEDBACK_INCREASE_AMOUNT);

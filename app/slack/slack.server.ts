@@ -6,14 +6,11 @@ export interface SlackMessageData {
   feedback: Record<string, string | number>;
 }
 
-// Constants for Slack Webhook URL
-const SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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';
-
 // Helper function to send a message to Slack
-export async function sendToSlack(data: SlackMessageData): Promise<void> {
+export async function sendToSlack(data: SlackMessageData, slack_webhook_url: string): Promise<void> {
   const messageText = formatSlackMessage(data);
 
-  const response = await fetch(SLACK_WEBHOOK_URL, {
+  const response = await fetch(slack_webhook_url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json; charset=UTF-8',
