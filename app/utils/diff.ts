@@ -82,9 +82,9 @@ export function diffFiles(fileName: string, oldFileContent: string, newFileConte
  *
  * ```html
  * <bolt_file_modifications>
- * <diff path="/home/project/index.js">
- * - console.log('Hello, World!');
- * + console.log('Hello, Bolt!');
+ * <diff path="/home/project/main.py">
+ * - print('Hello, World!')
+ * + print('Hello, Bolt!')
  * </diff>
  * </bolt_file_modifications>
  * ```

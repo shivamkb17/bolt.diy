@@ -7,12 +7,17 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig((config) => {
   return {
+    resolve: {
+      alias: {
+        crypto: 'node:crypto',
+      },
+    },
     build: {
       target: 'esnext',
     },
     plugins: [
       nodePolyfills({
-        include: ['path', 'buffer'],
+        include: ['path', 'buffer', 'crypto'],
       }),
       config.mode !== 'test' && remixCloudflareDevProxy(),
       remixVitePlugin({

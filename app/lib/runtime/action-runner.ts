@@ -1,10 +1,11 @@
-import { WebContainer } from '@webcontainer/api';
 import { map, type MapStore } from 'nanostores';
-import * as nodePath from 'node:path';
+// import * as nodePath from 'node:path';
 import type { BoltAction } from '~/types/actions';
 import { createScopedLogger } from '~/utils/logger';
 import { unreachable } from '~/utils/unreachable';
 import type { ActionCallbackData } from './message-parser';
+import { FilesStore } from '../stores/files';
+import { handleIncomingAction, nodesStore, parseBoltAction } from '../stores/nodes';
 
 const logger = createScopedLogger('ActionRunner');
 
@@ -34,13 +35,13 @@ export type ActionStateUpdate =
 type ActionsMap = MapStore<Record<string, ActionState>>;
 
 export class ActionRunner {
-  #webcontainer: Promise<WebContainer>;
   #currentExecutionPromise: Promise<void> = Promise.resolve();
+  #filesStore: FilesStore;
 
   actions: ActionsMap = map({});
 
-  constructor(webcontainerPromise: Promise<WebContainer>) {
-    this.#webcontainer = webcontainerPromise;
+  constructor(filesStore: FilesStore) {
+    this.#filesStore = filesStore;
   }
 
   addAction(data: ActionCallbackData) {
@@ -110,6 +111,10 @@ export class ActionRunner {
           await this.#runFileAction(action);
           break;
         }
+        case 'schema': {
+          await this.#runSchemaAction(action);
+          break;
+        }
       }
 
       this.#updateAction(actionId, { status: action.abortSignal.aborted ? 'aborted' : 'complete' });
@@ -126,27 +131,7 @@ export class ActionRunner {
       unreachable('Expected shell action');
     }
 
-    const webcontainer = await this.#webcontainer;
-
-    const process = await webcontainer.spawn('jsh', ['-c', action.content], {
-      env: { npm_config_yes: true },
-    });
-
-    action.abortSignal.addEventListener('abort', () => {
-      process.kill();
-    });
-
-    process.output.pipeTo(
-      new WritableStream({
-        write(data) {
-          console.log(data);
-        },
-      }),
-    );
-
-    const exitCode = await process.exit;
-
-    logger.debug(`Process terminated with code ${exitCode}`);
+    logger.debug(`Process skipped`);
   }
 
   async #runFileAction(action: ActionState) {
@@ -154,28 +139,40 @@ export class ActionRunner {
       unreachable('Expected file action');
     }
 
-    const webcontainer = await this.#webcontainer;
-
-    let folder = nodePath.dirname(action.filePath);
+    let folder = action.filePath.split('/').slice(0, -1).join('/');
 
     // remove trailing slashes
     folder = folder.replace(/\/+$/g, '');
 
     if (folder !== '.') {
       try {
-        await webcontainer.fs.mkdir(folder, { recursive: true });
-        logger.debug('Created folder', folder);
+        logger.debug('skipped folder create', folder);
       } catch (error) {
         logger.error('Failed to create folder\n\n', error);
       }
     }
 
     try {
-      await webcontainer.fs.writeFile(action.filePath, action.content);
-      logger.debug(`File written ${action.filePath}`);
+      // logger.debug(`skipped file write ${action.filePath}`);
+      await this.#filesStore.saveFile(action.filePath, action.content);
     } catch (error) {
       logger.error('Failed to write file\n\n', error);
     }
+  }
+
+  async #runSchemaAction(action: ActionState) {
+    if (action.type !== 'schema') {
+      unreachable('Expected schema action');
+    }
+
+    // example content
+    // "{
+    //   "name": "root",
+    //   "query": {}
+    // }"
+
+    // parses the schema content and updates the nodes store
+    parseBoltAction(action);
   }
 
   #updateAction(id: string, newState: ActionStateUpdate) {

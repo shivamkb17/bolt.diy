@@ -9,6 +9,54 @@
 
 html,
 body {
-  height: 100%;
+  margin: 0;
+  padding: 0;
   width: 100%;
+  min-height: 100vh;
+  height: 100dvh; /* Adjusts for mobile viewport changes */
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+
+.dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background-color: var(--bolt-elements-textTertiary);
+}
+
+@mixin responsive($class-name, $property, $value-sm) {
+  .#{$class-name} {
+    #{$property}: $value-sm;
+  }
+
+  @media (min-width: 640px) {
+    .sm\:#{$class-name} {
+      #{$property}: $value-sm;
+    }
+  }
+}
+
+
+$utilities: (
+  'text-base': ('font-size', 1rem),
+  'text-lg': ('font-size', 1.125rem),
+  'text-xl': ('font-size', 1.25rem),
+  'mt-4': ('margin-top', 1rem),
+  'p-4': ('padding', 1rem)
+  // Add more utilities as needed
+);
+
+
+@each $class-name, $props in $utilities {
+  @include responsive($class-name, nth($props, 1), nth($props, 2));
+}
+
+// Responsive for `sm:max-w-chat`
+@media (min-width: 640px) {
+  .sm\:max-w-chat {
+    max-width: var(--chat-max-width); // Make sure --chat-max-width is defined in variables.scss or locally
+  }
 }

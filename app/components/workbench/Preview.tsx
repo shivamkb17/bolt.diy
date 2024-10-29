@@ -3,122 +3,103 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { IconButton } from '~/components/ui/IconButton';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { PortDropdown } from './PortDropdown';
+import {
+  ReactFlow,
+  Controls,
+  Background,
+  useNodesState,
+  useEdgesState,
+  ReactFlowProvider,
+  Position,
+  type Edge,
+  type Node,
+  // useReactFlow,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+import { nodesStore } from '~/lib/stores/nodes';
+import { Button } from '../ui/ButtonOld';
+import { Loader2 } from 'lucide-react';
+import { chatId } from '~/lib/persistence';
+import { deploymentStore } from '~/lib/stores/deployments';
+import { Link } from '@remix-run/react';
+import { popupStore } from '~/lib/stores/popups';
 
-export const Preview = memo(() => {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [activePreviewIndex, setActivePreviewIndex] = useState(0);
-  const [isPortDropdownOpen, setIsPortDropdownOpen] = useState(false);
-  const hasSelectedPreview = useRef(false);
-  const previews = useStore(workbenchStore.previews);
-  const activePreview = previews[activePreviewIndex];
+type SchemaField = {
+  name: string;
+  type: string;
+  required?: boolean;
+};
 
-  const [url, setUrl] = useState('');
-  const [iframeUrl, setIframeUrl] = useState<string | undefined>();
+type SchemaSection = {
+  [key: string]: SchemaField[];
+};
+
+const methodColors = {
+  GET: 'bg-green-500 hover:bg-green-600 border-green-600',
+  POST: 'bg-blue-500 hover:bg-blue-600 border-blue-600',
+  PUT: 'bg-yellow-500 hover:bg-yellow-600 border-yellow-600',
+  DELETE: 'bg-red-500 hover:bg-red-600 border-red-600',
+};
+
+export function Preview() {
+  const [isLaunching, setIsLaunching] = useState(false);
+  const [launchedUrl, setLaunchedUrl] = useState<string | undefined>(undefined);
+  const [reloadKey, setReloadKey] = useState(0); // State to force iframe reload
+
+  const currentId = useStore(chatId);
+  const deployments = useStore(deploymentStore);
 
   useEffect(() => {
-    if (!activePreview) {
-      setUrl('');
-      setIframeUrl(undefined);
-
-      return;
-    }
-
-    const { baseUrl } = activePreview;
-
-    setUrl(baseUrl);
-    setIframeUrl(baseUrl);
-  }, [activePreview, iframeUrl]);
-
-  const validateUrl = useCallback(
-    (value: string) => {
-      if (!activePreview) {
-        return false;
+    if (deployments.length > 0) {
+      const deployment = deployments.find((d) => d.name === currentId);
+      if (deployment) {
+        setLaunchedUrl(deployment.service_url);
+        setReloadKey((prevKey) => prevKey + 1); // Increment reload key to force iframe reload
       }
-
-      const { baseUrl } = activePreview;
-
-      if (value === baseUrl) {
-        return true;
-      } else if (value.startsWith(baseUrl)) {
-        return ['/', '?', '#'].includes(value.charAt(baseUrl.length));
-      }
-
-      return false;
-    },
-    [activePreview],
-  );
-
-  const findMinPortIndex = useCallback(
-    (minIndex: number, preview: { port: number }, index: number, array: { port: number }[]) => {
-      return preview.port < array[minIndex].port ? index : minIndex;
-    },
-    [],
-  );
-
-  // when previews change, display the lowest port if user hasn't selected a preview
-  useEffect(() => {
-    if (previews.length > 1 && !hasSelectedPreview.current) {
-      const minPortIndex = previews.reduce(findMinPortIndex, 0);
-
-      setActivePreviewIndex(minPortIndex);
     }
-  }, [previews]);
+  }, [deployments, currentId]);
 
-  const reloadPreview = () => {
-    if (iframeRef.current) {
-      iframeRef.current.src = iframeRef.current.src;
-    }
-  };
+  if (launchedUrl) {
+    return (
+      <div className="w-full h-full border-none bg-[#f5f5f5]">
+        <div className="flex items-center p-2 gap-1">
+          <h2 className="text-xl font-bold text-[#222222]">Service URL:</h2>
+          <Link target="_blank" to={launchedUrl} className="text-xl text-blue-600 hover:underline">
+            {launchedUrl}
+          </Link>
+        </div>
+
+        <iframe
+          key={reloadKey}
+          src={`${launchedUrl}/docs`}
+          className="w-full h-full border-none"
+          title="Swagger Documentation"
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full h-full flex flex-col">
-      {isPortDropdownOpen && (
-        <div className="z-iframe-overlay w-full h-full absolute" onClick={() => setIsPortDropdownOpen(false)} />
-      )}
-      <div className="bg-bolt-elements-background-depth-2 p-2 flex items-center gap-1.5">
-        <IconButton icon="i-ph:arrow-clockwise" onClick={reloadPreview} />
-        <div
-          className="flex items-center gap-1 flex-grow bg-bolt-elements-preview-addressBar-background border border-bolt-elements-borderColor text-bolt-elements-preview-addressBar-text rounded-full px-3 py-1 text-sm hover:bg-bolt-elements-preview-addressBar-backgroundHover hover:focus-within:bg-bolt-elements-preview-addressBar-backgroundActive focus-within:bg-bolt-elements-preview-addressBar-backgroundActive
-        focus-within-border-bolt-elements-borderColorActive focus-within:text-bolt-elements-preview-addressBar-textActive"
+    <div className="flex items-center justify-center w-full h-full bg-[#f5f5f5]">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold mb-4 ">API Documentation</h2>
+        <p className="mb-4 ">The API documentation is not available yet. Launch the API to view the Swagger docs.</p>
+        <Button
+          disabled={isLaunching}
+          onClick={() => {
+            popupStore.setKey('deployment', true);
+          }}
         >
-          <input
-            ref={inputRef}
-            className="w-full bg-transparent outline-none"
-            type="text"
-            value={url}
-            onChange={(event) => {
-              setUrl(event.target.value);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && validateUrl(url)) {
-                setIframeUrl(url);
-
-                if (inputRef.current) {
-                  inputRef.current.blur();
-                }
-              }
-            }}
-          />
-        </div>
-        {previews.length > 1 && (
-          <PortDropdown
-            activePreviewIndex={activePreviewIndex}
-            setActivePreviewIndex={setActivePreviewIndex}
-            isDropdownOpen={isPortDropdownOpen}
-            setHasSelectedPreview={(value) => (hasSelectedPreview.current = value)}
-            setIsDropdownOpen={setIsPortDropdownOpen}
-            previews={previews}
-          />
-        )}
-      </div>
-      <div className="flex-1 border-t border-bolt-elements-borderColor">
-        {activePreview ? (
-          <iframe ref={iframeRef} className="border-none w-full h-full bg-white" src={iframeUrl} />
-        ) : (
-          <div className="flex w-full h-full justify-center items-center bg-white">No preview available</div>
-        )}
+          {isLaunching ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Launching API...
+            </>
+          ) : (
+            'Launch API'
+          )}
+        </Button>
       </div>
     </div>
   );
-});
+}

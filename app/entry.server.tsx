@@ -5,6 +5,7 @@ import { renderToReadableStream } from 'react-dom/server';
 import { renderHeadToString } from 'remix-island';
 import { Head } from './root';
 import { themeStore } from '~/lib/stores/theme';
+import { initializeAuth } from './auth/auth.server';
 
 export default async function handleRequest(
   request: Request,
@@ -13,6 +14,9 @@ export default async function handleRequest(
   remixContext: EntryContext,
   _loadContext: AppLoadContext,
 ) {
+  const auth = initializeAuth(_loadContext.cloudflare.env);
+  auth.handleRequest(responseHeaders, _loadContext);
+
   const readable = await renderToReadableStream(<RemixServer context={remixContext} url={request.url} />, {
     signal: request.signal,
     onError(error: unknown) {
@@ -68,8 +72,9 @@ export default async function handleRequest(
 
   responseHeaders.set('Content-Type', 'text/html');
 
-  responseHeaders.set('Cross-Origin-Embedder-Policy', 'require-corp');
+  responseHeaders.set('Cross-Origin-Embedder-Policy', 'unsafe-none'); // TODO: Determine if this is safe
   responseHeaders.set('Cross-Origin-Opener-Policy', 'same-origin');
+  responseHeaders.set('Content-Security-Policy', "img-src 'self' https://lh3.googleusercontent.com data:;");
 
   return new Response(body, {
     headers: responseHeaders,

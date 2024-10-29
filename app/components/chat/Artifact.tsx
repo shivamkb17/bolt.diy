@@ -133,57 +133,59 @@ const ActionList = memo(({ actions }: ActionListProps) => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
       <ul className="list-none space-y-2.5">
-        {actions.map((action, index) => {
-          const { status, type, content } = action;
-          const isLast = index === actions.length - 1;
+        {actions
+          .filter((action) => action.type !== 'schema')
+          .map((action, index) => {
+            const { status, type, content } = action;
+            const isLast = index === actions.length - 1;
 
-          return (
-            <motion.li
-              key={index}
-              variants={actionVariants}
-              initial="hidden"
-              animate="visible"
-              transition={{
-                duration: 0.2,
-                ease: cubicEasingFn,
-              }}
-            >
-              <div className="flex items-center gap-1.5 text-sm">
-                <div className={classNames('text-lg', getIconColor(action.status))}>
-                  {status === 'running' ? (
-                    <div className="i-svg-spinners:90-ring-with-bg"></div>
-                  ) : status === 'pending' ? (
-                    <div className="i-ph:circle-duotone"></div>
-                  ) : status === 'complete' ? (
-                    <div className="i-ph:check"></div>
-                  ) : status === 'failed' || status === 'aborted' ? (
-                    <div className="i-ph:x"></div>
+            return (
+              <motion.li
+                key={index}
+                variants={actionVariants}
+                initial="hidden"
+                animate="visible"
+                transition={{
+                  duration: 0.2,
+                  ease: cubicEasingFn,
+                }}
+              >
+                <div className="flex items-center gap-1.5 text-sm">
+                  <div className={classNames('text-lg', getIconColor(action.status))}>
+                    {status === 'running' ? (
+                      <div className="i-svg-spinners:90-ring-with-bg"></div>
+                    ) : status === 'pending' ? (
+                      <div className="i-ph:circle-duotone"></div>
+                    ) : status === 'complete' ? (
+                      <div className="i-ph:check"></div>
+                    ) : status === 'failed' || status === 'aborted' ? (
+                      <div className="i-ph:x"></div>
+                    ) : null}
+                  </div>
+                  {type === 'file' ? (
+                    <div>
+                      Create{' '}
+                      <code className="bg-bolt-elements-artifacts-inlineCode-background text-bolt-elements-artifacts-inlineCode-text px-1.5 py-1 rounded-md">
+                        {action.filePath}
+                      </code>
+                    </div>
+                  ) : type === 'shell' ? (
+                    <div className="flex items-center w-full min-h-[28px]">
+                      <span className="flex-1">Run command</span>
+                    </div>
                   ) : null}
                 </div>
-                {type === 'file' ? (
-                  <div>
-                    Create{' '}
-                    <code className="bg-bolt-elements-artifacts-inlineCode-background text-bolt-elements-artifacts-inlineCode-text px-1.5 py-1 rounded-md">
-                      {action.filePath}
-                    </code>
-                  </div>
-                ) : type === 'shell' ? (
-                  <div className="flex items-center w-full min-h-[28px]">
-                    <span className="flex-1">Run command</span>
-                  </div>
-                ) : null}
-              </div>
-              {type === 'shell' && (
-                <ShellCodeBlock
-                  classsName={classNames('mt-1', {
-                    'mb-3.5': !isLast,
-                  })}
-                  code={content}
-                />
-              )}
-            </motion.li>
-          );
-        })}
+                {type === 'shell' && (
+                  <ShellCodeBlock
+                    classsName={classNames('mt-1', {
+                      'mb-3.5': !isLast,
+                    })}
+                    code={content}
+                  />
+                )}
+              </motion.li>
+            );
+          })}
       </ul>
     </motion.div>
   );

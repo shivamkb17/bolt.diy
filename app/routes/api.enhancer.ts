@@ -1,16 +1,39 @@
-import { type ActionFunctionArgs } from '@remix-run/cloudflare';
+import { json, type ActionFunctionArgs } from '@remix-run/cloudflare';
 import { StreamingTextResponse, parseStreamPart } from 'ai';
+import { initializeAuth } from '~/auth/auth.server';
 import { streamText } from '~/lib/.server/llm/stream-text';
+import { decreaseQuota, getQuota, type QuotaResponse } from '~/quota/quota.server';
 import { stripIndents } from '~/utils/stripIndent';
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
 export async function action(args: ActionFunctionArgs) {
-  return enhancerAction(args);
+  const { context, request } = args;
+
+  const auth = initializeAuth(context.cloudflare.env);
+  const user = await auth.getUser(request, context);
+
+  if (user === undefined) {
+    return json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const initialQuota = await getQuota(context.cloudflare.env, user.userId);
+
+  if (initialQuota.dailyQuotaRemaining <= 0 && initialQuota.bonusQuotaRemaining <= 0) {
+    return json({ error: 'Quota exceeded. You can only perform 10 chat actions per day.' }, { status: 429 });
+  }
+
+  // Decrease the quota by 1
+  const newQuota = await decreaseQuota(context.cloudflare.env, user.userId);
+
+  return enhancerAction(args, newQuota);
 }
 
-async function enhancerAction({ context, request }: ActionFunctionArgs) {
+async function enhancerAction(
+  { context, request }: ActionFunctionArgs,
+  { dailyQuotaRemaining, bonusQuotaRemaining }: QuotaResponse,
+) {
   const { message } = await request.json<{ message: string }>();
 
   try {
@@ -48,9 +71,15 @@ async function enhancerAction({ context, request }: ActionFunctionArgs) {
 
     const transformedStream = result.toAIStream().pipeThrough(transformStream);
 
-    return new StreamingTextResponse(transformedStream);
+    return new StreamingTextResponse(transformedStream, {
+      headers: {
+        contentType: 'text/plain; charset=utf-8',
+        'x-daily-quota-remaining': dailyQuotaRemaining?.toString() || '0',
+        'x-bonus-quota-remaining': bonusQuotaRemaining?.toString() || '0',
+      },
+    });
   } catch (error) {
-    console.log(error);
+    console.error(error);
 
     throw new Response(null, {
       status: 500,

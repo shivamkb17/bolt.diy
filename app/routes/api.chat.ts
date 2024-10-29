@@ -1,14 +1,39 @@
-import { type ActionFunctionArgs } from '@remix-run/cloudflare';
+import { json, type ActionFunctionArgs } from '@remix-run/cloudflare';
+import { initializeAuth } from '~/auth/auth.server';
 import { MAX_RESPONSE_SEGMENTS, MAX_TOKENS } from '~/lib/.server/llm/constants';
 import { CONTINUE_PROMPT } from '~/lib/.server/llm/prompts';
 import { streamText, type Messages, type StreamingOptions } from '~/lib/.server/llm/stream-text';
 import SwitchableStream from '~/lib/.server/llm/switchable-stream';
+import { decreaseQuota, getQuota, type QuotaResponse } from '~/quota/quota.server';
 
+// Updated action function to include rate limiting
 export async function action(args: ActionFunctionArgs) {
-  return chatAction(args);
+  const { context, request } = args;
+
+  const auth = initializeAuth(context.cloudflare.env);
+  const user = await auth.getUser(request, context);
+
+  if (user === undefined) {
+    return json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const initialQuota = await getQuota(context.cloudflare.env, user.userId);
+
+  if (initialQuota.dailyQuotaRemaining <= 0 && initialQuota.bonusQuotaRemaining <= 0) {
+    return json({ error: 'Quota exceeded. You can only perform 10 chat actions per day.' }, { status: 429 });
+  }
+
+  // Decrease the quota by 1
+  const newQuota = await decreaseQuota(context.cloudflare.env, user.userId);
+
+  // If within quota, proceed with the chat action and pass along the context
+  return await chatAction(args, newQuota);
 }
 
-async function chatAction({ context, request }: ActionFunctionArgs) {
+async function chatAction(
+  { context, request }: ActionFunctionArgs,
+  { dailyQuotaRemaining, bonusQuotaRemaining }: QuotaResponse,
+) {
   const { messages } = await request.json<{ messages: Messages }>();
 
   const stream = new SwitchableStream();
@@ -46,10 +71,12 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
       status: 200,
       headers: {
         contentType: 'text/plain; charset=utf-8',
+        'x-daily-quota-remaining': dailyQuotaRemaining?.toString() || '0',
+        'x-bonus-quota-remaining': bonusQuotaRemaining?.toString() || '0',
       },
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
 
     throw new Response(null, {
       status: 500,

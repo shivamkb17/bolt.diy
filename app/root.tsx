@@ -13,6 +13,8 @@ import xtermStyles from '@xterm/xterm/css/xterm.css?url';
 
 import 'virtual:uno.css';
 
+import { RevalidateSession } from '@propelauth/remix/client';
+
 export const links: LinksFunction = () => [
   {
     rel: 'icon',
@@ -55,7 +57,7 @@ const inlineThemeCode = stripIndents`
 export const Head = createHead(() => (
   <>
     <meta charSet="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <Meta />
     <Links />
     <script dangerouslySetInnerHTML={{ __html: inlineThemeCode }} />
@@ -79,5 +81,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  return (
+    <>
+      <Outlet />
+      <RevalidateSession />
+    </>
+  );
 }

@@ -1,4 +1,4 @@
-import type { ActionType, BoltAction, BoltActionData, FileAction, ShellAction } from '~/types/actions';
+import type { ActionType, BoltAction, BoltActionData, FileAction, SchemaAction, ShellAction } from '~/types/actions';
 import type { BoltArtifactData } from '~/types/artifact';
 import { createScopedLogger } from '~/utils/logger';
 import { unreachable } from '~/utils/unreachable';
@@ -256,11 +256,19 @@ export class StreamingMessageParser {
       }
 
       (actionAttributes as FileAction).filePath = filePath;
+    } else if (actionType === 'schema') {
+      const endpoint = this.#extractAttribute(actionTag, 'endpoint') as string;
+
+      if (!endpoint) {
+        logger.debug('Schema endpoint not specified');
+      }
+
+      (actionAttributes as SchemaAction).endpoint = endpoint;
     } else if (actionType !== 'shell') {
       logger.warn(`Unknown action type '${actionType}'`);
     }
 
-    return actionAttributes as FileAction | ShellAction;
+    return actionAttributes as FileAction | ShellAction | SchemaAction;
   }
 
   #extractAttribute(tag: string, attributeName: string): string | undefined {

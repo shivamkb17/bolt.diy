@@ -43,6 +43,28 @@ export function HeaderActionButtons({}: HeaderActionButtonsProps) {
   );
 }
 
+// This is a chevron that toggles the chat open and closed. It is to the left of the workbench and closes the chat to the left.
+export function ChatChevron() {
+  const { showChat } = useStore(chatStore);
+  const showWorkbench = useStore(workbenchStore.showWorkbench);
+
+  return (
+    <div className={classNames('block', { hidden: !showWorkbench })}>
+      <Button
+        onClick={() => {
+          chatStore.setKey('showChat', !showChat);
+        }}
+      >
+        {showChat ? (
+          <div className="i-bolt:chevron-left text-gray-400 text-4xl" />
+        ) : (
+          <div className="i-bolt:chevron-right text-gray-400 text-4xl" />
+        )}
+      </Button>
+    </div>
+  );
+}
+
 interface ButtonProps {
   active?: boolean;
   disabled?: boolean;

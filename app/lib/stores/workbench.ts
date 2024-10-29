@@ -2,11 +2,10 @@ import { atom, map, type MapStore, type ReadableAtom, type WritableAtom } from '
 import type { EditorDocument, ScrollPosition } from '~/components/editor/codemirror/CodeMirrorEditor';
 import { ActionRunner } from '~/lib/runtime/action-runner';
 import type { ActionCallbackData, ArtifactCallbackData } from '~/lib/runtime/message-parser';
-import { webcontainer } from '~/lib/webcontainer';
 import type { ITerminal } from '~/types/terminal';
 import { unreachable } from '~/utils/unreachable';
 import { EditorStore } from './editor';
-import { FilesStore, type FileMap } from './files';
+import { FilesStore, fileStore, type FileMap } from './files';
 import { PreviewsStore } from './previews';
 import { TerminalStore } from './terminal';
 
@@ -24,10 +23,10 @@ type Artifacts = MapStore<Record<string, ArtifactState>>;
 export type WorkbenchViewType = 'code' | 'preview';
 
 export class WorkbenchStore {
-  #previewsStore = new PreviewsStore(webcontainer);
-  #filesStore = new FilesStore(webcontainer);
-  #editorStore = new EditorStore(this.#filesStore);
-  #terminalStore = new TerminalStore(webcontainer);
+  #previewsStore = new PreviewsStore();
+  #filesStore: FilesStore;
+  #editorStore: EditorStore;
+  #terminalStore = new TerminalStore();
 
   artifacts: Artifacts = import.meta.hot?.data.artifacts ?? map({});
 
@@ -44,6 +43,8 @@ export class WorkbenchStore {
       import.meta.hot.data.showWorkbench = this.showWorkbench;
       import.meta.hot.data.currentView = this.currentView;
     }
+    this.#filesStore = fileStore;
+    this.#editorStore = new EditorStore(this.#filesStore);
   }
 
   get previews() {
@@ -88,7 +89,6 @@ export class WorkbenchStore {
 
   setDocuments(files: FileMap) {
     this.#editorStore.setDocuments(files);
-
     if (this.#filesStore.filesCount > 0 && this.currentDocument.get() === undefined) {
       // we find the first file and select it
       for (const [filePath, dirent] of Object.entries(files)) {
@@ -229,7 +229,7 @@ export class WorkbenchStore {
       id,
       title,
       closed: false,
-      runner: new ActionRunner(webcontainer),
+      runner: new ActionRunner(this.#filesStore),
     });
   }
 

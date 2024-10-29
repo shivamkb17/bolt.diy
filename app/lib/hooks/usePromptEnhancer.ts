@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { createScopedLogger } from '~/utils/logger';
+import { chatStore } from '~/lib/stores/chat';
 
 const logger = createScopedLogger('usePromptEnhancement');
 
@@ -25,6 +26,12 @@ export function usePromptEnhancer() {
 
     const reader = response.body?.getReader();
 
+    // parse the response headers to update the daily and bonus quota
+    const dailyQuota = response.headers.get('x-daily-quota-remaining');
+    const bonusQuota = response.headers.get('x-bonus-quota-remaining');
+    chatStore.setKey('dailyQuotaRemaining', Number(dailyQuota));
+    chatStore.setKey('bonusQuotaRemaining', Number(bonusQuota));
+
     const originalInput = input;
 
     if (reader) {
@@ -43,9 +50,14 @@ export function usePromptEnhancer() {
             break;
           }
 
-          _input += decoder.decode(value);
+          let temp = decoder.decode(value);
+          // TODO: Figure out why the prompt enhancer always ends with '[object Object]'
+          if (temp === '[object Object]') {
+            continue;
+          }
+          _input += temp;
 
-          logger.trace('Set input', _input);
+          logger.trace(decoder.decode(value));
 
           setInput(_input);
         }

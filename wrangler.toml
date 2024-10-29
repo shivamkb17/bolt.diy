@@ -1,5 +1,11 @@
 #:schema node_modules/wrangler/config-schema.json
-name = "bolt"
-compatibility_flags = ["nodejs_compat"]
-compatibility_date = "2024-07-01"
+name = "launchflow"
+compatibility_flags = [ "nodejs_compat" ]
+compatibility_date = "2024-09-23"
 pages_build_output_dir = "./build/client"
+
+
+[[durable_objects.bindings]]
+name = "API_QUOTA"
+class_name = "APIQuota"
+script_name = "api-quota"

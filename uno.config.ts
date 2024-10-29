@@ -1,6 +1,6 @@
 import { globSync } from 'fast-glob';
 import fs from 'node:fs/promises';
-import { basename } from 'node:path';
+// import { basename } from 'node:path';
 import { defineConfig, presetIcons, presetUno, transformerDirectives } from 'unocss';
 
 const iconPaths = globSync('./icons/*.svg');
@@ -9,7 +9,9 @@ const collectionName = 'bolt';
 
 const customIconCollection = iconPaths.reduce(
   (acc, iconPath) => {
-    const [iconName] = basename(iconPath).split('.');
+    // const [iconName] = basename(iconPath).split('.');
+    // without node:path
+    const [iconName] = iconPath.split('/').pop()!.split('.');
 
     acc[collectionName] ??= {};
     acc[collectionName][iconName] = async () => fs.readFile(iconPath, 'utf8');
@@ -217,6 +219,7 @@ export default defineConfig({
           sidebar: {
             dropdownShadow: 'var(--bolt-elements-sidebar-dropdownShadow)',
             buttonBackgroundDefault: 'var(--bolt-elements-sidebar-buttonBackgroundDefault)',
+            buttonBackgroundSecondary: 'var(--bolt-elements-sidebar-buttonBackgroundSecondary)',
             buttonBackgroundHover: 'var(--bolt-elements-sidebar-buttonBackgroundHover)',
             buttonText: 'var(--bolt-elements-sidebar-buttonText)',
           },

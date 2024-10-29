@@ -12,6 +12,7 @@ import { fileModificationsToHTML } from '~/utils/diff';
 import { cubicEasingFn } from '~/utils/easings';
 import { createScopedLogger, renderLogger } from '~/utils/logger';
 import { BaseChat } from './BaseChat';
+import { userStore } from '~/lib/stores/user';
 
 const toastAnimation = cssTransition({
   enter: 'animated fadeInRight',
@@ -71,18 +72,27 @@ export const ChatImpl = memo(({ initialMessages, storeMessageHistory }: ChatProp
 
   const [chatStarted, setChatStarted] = useState(initialMessages.length > 0);
 
-  const { showChat } = useStore(chatStore);
+  const { showChat, dailyQuotaRemaining, bonusQuotaRemaining } = useStore(chatStore);
 
   const [animationScope, animate] = useAnimate();
 
   const { messages, isLoading, input, handleInputChange, setInput, stop, append } = useChat({
     api: '/api/chat',
+    onResponse: async (response) => {
+      logger.info('Received response from chat api', response);
+      // parse the response headers to update the daily and bonus quota
+      const dailyQuota = response.headers.get('x-daily-quota-remaining');
+      const bonusQuota = response.headers.get('x-bonus-quota-remaining');
+      chatStore.setKey('dailyQuotaRemaining', Number(dailyQuota));
+      chatStore.setKey('bonusQuotaRemaining', Number(bonusQuota));
+    },
     onError: (error) => {
-      logger.error('Request failed\n\n', error);
-      toast.error('There was an error processing your request');
+      logger.error('Request failed\n\n', error, error.message, error.cause);
+      // the error.message is in json format
+      toast.error(error.message);
     },
     onFinish: () => {
-      logger.debug('Finished streaming');
+      logger.info('Finished streaming');
     },
     initialMessages,
   });
@@ -150,6 +160,11 @@ export const ChatImpl = memo(({ initialMessages, storeMessageHistory }: ChatProp
     const _input = messageInput || input;
 
     if (_input.length === 0 || isLoading) {
+      return;
+    }
+
+    if (!userStore.get()) {
+      toast.error('You need to be logged in to use the chat');
       return;
     }
 

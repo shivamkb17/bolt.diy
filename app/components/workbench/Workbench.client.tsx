@@ -16,6 +16,8 @@ import { cubicEasingFn } from '~/utils/easings';
 import { renderLogger } from '~/utils/logger';
 import { EditorPanel } from './EditorPanel';
 import { Preview } from './Preview';
+import { ClientOnly } from 'remix-utils/client-only';
+import { ChatChevron, HeaderActionButtons } from '../header/HeaderActionButtons.client';
 
 interface WorkspaceProps {
   chatStarted?: boolean;
@@ -109,39 +111,43 @@ export const Workbench = memo(({ chatStarted, isStreaming }: WorkspaceProps) => 
       >
         <div
           className={classNames(
-            'fixed top-[calc(var(--header-height)+1.5rem)] bottom-6 w-[var(--workbench-inner-width)] mr-4 z-0 transition-[left,width] duration-200 bolt-ease-cubic-bezier',
+            'fixed top-[calc(var(--header-height))] bottom-0 w-[var(--workbench-inner-width)] mr-0 z-0 transition-[left,width] duration-200 bolt-ease-cubic-bezier',
             {
               'left-[var(--workbench-left)]': showWorkbench,
               'left-[100%]': !showWorkbench,
             },
           )}
         >
-          <div className="absolute inset-0 px-6">
-            <div className="h-full flex flex-col bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor shadow-sm rounded-lg overflow-hidden">
-              <div className="flex items-center px-3 py-2 border-b border-bolt-elements-borderColor">
+          <div className="-ml-10 w-fit h-full content-center">
+            <ChatChevron />
+          </div>
+          <div className="absolute inset-0">
+            <div className="h-full flex flex-col border border-bolt-elements-borderColor shadow-sm rounded-tl-lg overflow-hidden">
+              <div className="flex items-center px-3 py-2 border-b border-bolt-elements-borderColor bg-bolt-elements-background-depth-2">
                 <Slider selected={selectedView} options={sliderOptions} setSelected={setSelectedView} />
                 <div className="ml-auto" />
-                {selectedView === 'code' && (
+                {/* {selectedView === 'code' && (
                   <PanelHeaderButton
                     className="mr-1 text-sm"
                     onClick={() => {
                       workbenchStore.toggleTerminal(!workbenchStore.showTerminal.get());
                     }}
                   >
-                    <div className="i-ph:terminal" />
-                    Toggle Terminal
+                    <div className="i-ph:github-logo" />
+                    Export to GitHub
                   </PanelHeaderButton>
-                )}
-                <IconButton
-                  icon="i-ph:x-circle"
-                  className="-mr-1"
-                  size="xl"
-                  onClick={() => {
-                    workbenchStore.showWorkbench.set(false);
-                  }}
-                />
+                )} */}
+
+                {/* <IconButton
+                    icon="i-ph:x-circle"
+                    className="-mr-1"
+                    size="xl"
+                    onClick={() => {
+                      workbenchStore.showWorkbench.set(false);
+                    }}
+                  /> */}
               </div>
-              <div className="relative flex-1 overflow-hidden">
+              <div className="relative flex-1 overflow-hidden ">
                 <View
                   initial={{ x: selectedView === 'code' ? 0 : '-100%' }}
                   animate={{ x: selectedView === 'code' ? 0 : '-100%' }}

@@ -36,6 +36,12 @@ function getEditorTheme(settings: EditorSettings) {
       '&:focus-visible': {
         outline: 'none',
       },
+      /* Custom Scrollbar styles */
+      scrollbarWidth: 'thin',
+      scrollbarColor: '#cccccc var(--cm-backgroundColor)',
+      '&::-webkit-scrollbar': {
+        width: '12px',
+      },
     },
     '.cm-line': {
       padding: '0 0 0 4px',
