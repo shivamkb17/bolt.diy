@@ -2,6 +2,51 @@
 
 # Bolt.new: AI-Powered Full-Stack Web Development in the Browser
 
+Bolt.new 是一个 AI 驱动的 Web 开发代理，允许您直接从浏览器提示、运行、编辑和部署全栈应用程序，无需本地设置。如果您在这里使用 Bolt 开源代码库构建自己的 AI 驱动的 Web 开发代理。
+
+本项目在原始项目的基础上，增加了OpenAI兼容接口调用，可以使用部署于本地的LLMs服务。
+
+## 1、安装
+
+```bash
+# 安装Nodejs和pnpm
+# 安装Node.js的方法参见https://nodejs.org/zh-cn
+npm install pnpm -g
+# 下载代码
+git clone https://github.com/little51/bolt.new.local
+cd bolt.new.local
+# 安装依赖库
+pnpm install
+```
+
+## 2、配置
+
+LLMs服务的配置在.env文件中，以下为配置好的样例：
+
+```bash
+# LLM服务提供者
+# 可选OpenAI或Anthropic
+VITE_LLM_PROVIDER=OpenAI
+# OpenAI参数
+VITE_OPENAI_BASE_URL=https://gitclone.com/aiit/ollama/v1
+VITE_OPENAI_API_KEY=EMPTY
+VITE_OPENAI_MODEL_NAME=glm4
+# Anthropic参数
+VITE_ANTHROPIC_API_KEY=
+```
+
+## 3、运行
+
+```shell
+pnpm run dev
+# 然后访问http://localhost:5173
+# 打包、发布参考VITE的相关资料
+```
+
+
+
+# 以下是原始项目的说明原文
+
 Bolt.new is an AI-powered web development agent that allows you to prompt, run, edit, and deploy full-stack applications directly from your browser—no local setup required. If you're here to build your own AI-powered web dev agent using the Bolt open source codebase, [click here to get started!](./CONTRIBUTING.md)
 
 ## What Makes Bolt.new Different
