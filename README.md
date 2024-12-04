@@ -39,7 +39,7 @@ VITE_ANTHROPIC_API_KEY=
 
 ```shell
 pnpm run dev
-# 然后访问http://localhost:5173
+# 然后访问http://localhost:8501
 # 打包、发布参考VITE的相关资料
 ```
 
