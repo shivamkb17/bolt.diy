@@ -139,7 +139,11 @@ export class ActionRunner {
     process.output.pipeTo(
       new WritableStream({
         write(data) {
-          console.log(data);
+          if (data.includes('(Y/n)')) {  
+            process.kill();
+          }else{
+            console.log(data) ;
+          }
         },
       }),
     );
