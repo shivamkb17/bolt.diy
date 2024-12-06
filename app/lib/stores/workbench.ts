@@ -9,6 +9,10 @@ import { EditorStore } from './editor';
 import { FilesStore, type FileMap } from './files';
 import { PreviewsStore } from './previews';
 import { TerminalStore } from './terminal';
+import JSZip from 'jszip';
+import { description } from '~/lib/persistence';
+import { extractRelativePath } from '~/utils/diff';
+import { saveAs } from 'file-saver';
 
 export interface ArtifactState {
   id: string;
@@ -270,6 +274,39 @@ export class WorkbenchStore {
   #getArtifact(id: string) {
     const artifacts = this.artifacts.get();
     return artifacts[id];
+  }
+
+  async downloadCode() {
+    const zip = new JSZip();
+    const files = this.files.get();
+    //file name
+    const projectName = (description.value ?? 'project').toLocaleLowerCase().split(' ').join('_');
+    const now = new Date();  
+    const timestampHash = `${now.getFullYear()}` +  
+                      `${String(now.getMonth() + 1).padStart(2, '0')}` +  
+                      `${String(now.getDate()).padStart(2, '0')}` +  
+                      `${String(now.getHours()).padStart(2, '0')}` +  
+                      `${String(now.getMinutes()).padStart(2, '0')}`;   
+    const uniqueProjectName = `${projectName}_${timestampHash}`;
+    //zip
+    for (const [filePath, dirent] of Object.entries(files)) {
+      if (dirent?.type === 'file' && !dirent.isBinary) {
+        const relativePath = extractRelativePath(filePath);
+        const pathSegments = relativePath.split('/');
+        if (pathSegments.length > 1) {
+          let currentFolder = zip;
+          for (let i = 0; i < pathSegments.length - 1; i++) {
+            currentFolder = currentFolder.folder(pathSegments[i])!;
+          }
+          currentFolder.file(pathSegments[pathSegments.length - 1], dirent.content);
+        } else {
+          zip.file(relativePath, dirent.content);
+        }
+      }
+    }
+    //save
+    const content = await zip.generateAsync({ type: 'blob' });
+    saveAs(content, `${uniqueProjectName}.zip`);
   }
 }
 

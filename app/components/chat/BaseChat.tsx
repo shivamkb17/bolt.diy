@@ -28,11 +28,11 @@ interface BaseChatProps {
 }
 
 const EXAMPLE_PROMPTS = [
-  { text: 'Build a todo app in React using Tailwind' },
-  { text: 'Build a simple blog using Astro' },
-  { text: 'Create a cookie consent form using Material UI' },
-  { text: 'Make a space invaders game' },
-  { text: 'How do I center a div?' },
+  { text: '使用 Tailwind 在 React 中构建一个 todo 应用程序' },
+  { text: '使用 Astro 构建一个简单的博客' },
+  { text: '使用 Material UI 创建 Cookie 同意表单' },
+  { text: '制作一个太空入侵者游戏' },
+  { text: '如何将 div 居中？' },
 ];
 
 const TEXTAREA_MIN_HEIGHT = 76;
@@ -130,7 +130,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                       minHeight: TEXTAREA_MIN_HEIGHT,
                       maxHeight: TEXTAREA_MAX_HEIGHT,
                     }}
-                    placeholder="How can Bolt help you today?"
+                    placeholder="请输入您编写程序的需求"
                     translate="no"
                   />
                   <ClientOnly>

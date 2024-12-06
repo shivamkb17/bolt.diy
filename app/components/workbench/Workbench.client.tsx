@@ -122,15 +122,24 @@ export const Workbench = memo(({ chatStarted, isStreaming }: WorkspaceProps) => 
                 <Slider selected={selectedView} options={sliderOptions} setSelected={setSelectedView} />
                 <div className="ml-auto" />
                 {selectedView === 'code' && (
-                  <PanelHeaderButton
-                    className="mr-1 text-sm"
-                    onClick={() => {
-                      workbenchStore.toggleTerminal(!workbenchStore.showTerminal.get());
-                    }}
-                  >
-                    <div className="i-ph:terminal" />
-                    Toggle Terminal
-                  </PanelHeaderButton>
+                  <div className="flex overflow-y-auto">
+                    <PanelHeaderButton className="mr-1 text-sm"
+                      onClick={() => {
+                        workbenchStore.downloadCode();
+                      }}>
+                      <div className="i-ph:code" />
+                      download code
+                    </PanelHeaderButton>
+                    <PanelHeaderButton
+                      className="mr-1 text-sm"
+                      onClick={() => {
+                        workbenchStore.toggleTerminal(!workbenchStore.showTerminal.get());
+                      }}
+                    >
+                      <div className="i-ph:terminal" />
+                      Toggle Terminal
+                    </PanelHeaderButton>
+                  </div>
                 )}
                 <IconButton
                   icon="i-ph:x-circle"
