@@ -28,11 +28,10 @@ interface BaseChatProps {
 }
 
 const EXAMPLE_PROMPTS = [
-  { text: '使用 Tailwind 在 React 中构建一个 todo 应用程序' },
-  { text: '使用 Astro 构建一个简单的博客' },
-  { text: '使用 Material UI 创建 Cookie 同意表单' },
-  { text: '制作一个太空入侵者游戏' },
-  { text: '如何将 div 居中？' },
+  { text: '使用 Tailwind 在 React 中构建一个邮件管理应用程序' },
+  { text: '使用 Astro 构建一个任务管理应用程序' },
+  { text: '使用 React 构建一个ChatBot程序' },
+  { text: '如何实现多AI Agent应用，实现任务自动分解、执行？' },
 ];
 
 const TEXTAREA_MIN_HEIGHT = 76;
@@ -73,12 +72,9 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
           <div className={classNames(styles.Chat, 'flex flex-col flex-grow min-w-[var(--chat-min-width)] h-full')}>
             {!chatStarted && (
               <div id="intro" className="mt-[26vh] max-w-chat mx-auto">
-                <h1 className="text-5xl text-center font-bold text-bolt-elements-textPrimary mb-2">
-                  Where ideas begin
+                <h1 className="text-3xl text-center font-bold text-bolt-elements-textPrimary mb-2">
+                 程序需求
                 </h1>
-                <p className="mb-4 text-center text-bolt-elements-textSecondary">
-                  Bring ideas to life in seconds or get help on existing projects.
-                </p>
               </div>
             )}
             <div

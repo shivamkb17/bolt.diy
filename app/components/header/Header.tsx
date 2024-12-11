@@ -21,8 +21,12 @@ export function Header() {
       <div className="flex items-center gap-2 z-logo text-bolt-elements-textPrimary cursor-pointer">
         <div className="i-ph:sidebar-simple-duotone text-xl" />
         <a href="/" className="text-2xl font-semibold text-accent flex items-center">
-          <span className="i-bolt:logo-text?mask w-[46px] inline-block" />
+          <span className="i-bolt:stars?mask w-[46px] inline-block" />
         </a>
+        <span className="absolute right-12">
+          <a href='https://github.com/little51/bolt.new.local' 
+            target='_blank' className="underline hover:no-underline">源码</a>
+        </span>
       </div>
       <span className="flex-1 px-4 truncate text-center text-bolt-elements-textPrimary">
         <ClientOnly>{() => <ChatDescription />}</ClientOnly>

@@ -9,13 +9,11 @@ import {
 } from '~/components/editor/codemirror/CodeMirrorEditor';
 import { IconButton } from '~/components/ui/IconButton';
 import { PanelHeaderButton } from '~/components/ui/PanelHeaderButton';
-import { Slider, type SliderOptions } from '~/components/ui/Slider';
 import { workbenchStore, type WorkbenchViewType } from '~/lib/stores/workbench';
 import { classNames } from '~/utils/classNames';
 import { cubicEasingFn } from '~/utils/easings';
 import { renderLogger } from '~/utils/logger';
 import { EditorPanel } from './EditorPanel';
-import { Preview } from './Preview';
 
 interface WorkspaceProps {
   chatStarted?: boolean;
@@ -23,17 +21,6 @@ interface WorkspaceProps {
 }
 
 const viewTransition = { ease: cubicEasingFn };
-
-const sliderOptions: SliderOptions<WorkbenchViewType> = {
-  left: {
-    value: 'code',
-    text: 'Code',
-  },
-  right: {
-    value: 'preview',
-    text: 'Preview',
-  },
-};
 
 const workbenchVariants = {
   closed: {
@@ -55,7 +42,6 @@ const workbenchVariants = {
 export const Workbench = memo(({ chatStarted, isStreaming }: WorkspaceProps) => {
   renderLogger.trace('Workbench');
 
-  const hasPreview = useStore(computed(workbenchStore.previews, (previews) => previews.length > 0));
   const showWorkbench = useStore(workbenchStore.showWorkbench);
   const selectedFile = useStore(workbenchStore.selectedFile);
   const currentDocument = useStore(workbenchStore.currentDocument);
@@ -66,12 +52,6 @@ export const Workbench = memo(({ chatStarted, isStreaming }: WorkspaceProps) => 
   const setSelectedView = (view: WorkbenchViewType) => {
     workbenchStore.currentView.set(view);
   };
-
-  useEffect(() => {
-    if (hasPreview) {
-      setSelectedView('preview');
-    }
-  }, [hasPreview]);
 
   useEffect(() => {
     workbenchStore.setDocuments(files);
@@ -119,7 +99,6 @@ export const Workbench = memo(({ chatStarted, isStreaming }: WorkspaceProps) => 
           <div className="absolute inset-0 px-6">
             <div className="h-full flex flex-col bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor shadow-sm rounded-lg overflow-hidden">
               <div className="flex items-center px-3 py-2 border-b border-bolt-elements-borderColor">
-                <Slider selected={selectedView} options={sliderOptions} setSelected={setSelectedView} />
                 <div className="ml-auto" />
                 {selectedView === 'code' && (
                   <div className="flex overflow-y-auto">
@@ -128,7 +107,7 @@ export const Workbench = memo(({ chatStarted, isStreaming }: WorkspaceProps) => 
                         workbenchStore.downloadCode();
                       }}>
                       <div className="i-ph:code" />
-                      download code
+                      打包下载源码
                     </PanelHeaderButton>
                     <PanelHeaderButton
                       className="mr-1 text-sm"
@@ -137,7 +116,7 @@ export const Workbench = memo(({ chatStarted, isStreaming }: WorkspaceProps) => 
                       }}
                     >
                       <div className="i-ph:terminal" />
-                      Toggle Terminal
+                      运行终端命令
                     </PanelHeaderButton>
                   </div>
                 )}
@@ -167,12 +146,6 @@ export const Workbench = memo(({ chatStarted, isStreaming }: WorkspaceProps) => 
                     onFileSave={onFileSave}
                     onFileReset={onFileReset}
                   />
-                </View>
-                <View
-                  initial={{ x: selectedView === 'preview' ? 0 : '100%' }}
-                  animate={{ x: selectedView === 'preview' ? 0 : '100%' }}
-                >
-                  <Preview />
                 </View>
               </div>
             </div>
