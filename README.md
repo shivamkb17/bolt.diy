@@ -47,6 +47,7 @@ pnpm run dev
 # 修改Linux格式
 dos2unix bindings.sh
 dos2unix .env.local
+chmod +x bindings.sh
 # 编译运行
 pnpm run build
 pnpm run start --ip 0.0.0.0

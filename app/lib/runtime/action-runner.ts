@@ -1,10 +1,11 @@
 import { WebContainer } from '@webcontainer/api';
-import { map, type MapStore } from 'nanostores';
+import { atom, map, type MapStore } from 'nanostores';
 import * as nodePath from 'node:path';
 import type { BoltAction } from '~/types/actions';
 import { createScopedLogger } from '~/utils/logger';
 import { unreachable } from '~/utils/unreachable';
 import type { ActionCallbackData } from './message-parser';
+import type { BoltShell } from '~/utils/shell';
 
 const logger = createScopedLogger('ActionRunner');
 
@@ -36,11 +37,13 @@ type ActionsMap = MapStore<Record<string, ActionState>>;
 export class ActionRunner {
   #webcontainer: Promise<WebContainer>;
   #currentExecutionPromise: Promise<void> = Promise.resolve();
-
+  #shellTerminal: () => BoltShell;
+  runnerId = atom<string>(`${Date.now()}`);
   actions: ActionsMap = map({});
 
-  constructor(webcontainerPromise: Promise<WebContainer>) {
+  constructor(webcontainerPromise: Promise<WebContainer>, getShellTerminal: () => BoltShell) {
     this.#webcontainer = webcontainerPromise;
+    this.#shellTerminal = getShellTerminal;
   }
 
   addAction(data: ActionCallbackData) {
@@ -72,7 +75,7 @@ export class ActionRunner {
     });
   }
 
-  async runAction(data: ActionCallbackData) {
+  async runAction(data: ActionCallbackData, isStreaming: boolean = false) {
     const { actionId } = data;
     const action = this.actions.get()[actionId];
 
@@ -81,21 +84,29 @@ export class ActionRunner {
     }
 
     if (action.executed) {
-      return;
+      return; // No return value here
     }
 
-    this.#updateAction(actionId, { ...action, ...data.action, executed: true });
+    if (isStreaming && action.type !== 'file') {
+      return; // No return value here
+    }
+
+    this.#updateAction(actionId, { ...action, ...data.action, executed: !isStreaming });
 
     this.#currentExecutionPromise = this.#currentExecutionPromise
       .then(() => {
-        return this.#executeAction(actionId);
+        return this.#executeAction(actionId, isStreaming);
       })
       .catch((error) => {
         console.error('Action failed:', error);
       });
+
+    await this.#currentExecutionPromise;
+
+    return;
   }
 
-  async #executeAction(actionId: string) {
+  async #executeAction(actionId: string, isStreaming: boolean = false) {
     const action = this.actions.get()[actionId];
 
     this.#updateAction(actionId, { status: 'running' });
@@ -110,11 +121,29 @@ export class ActionRunner {
           await this.#runFileAction(action);
           break;
         }
+        case 'start': {
+          // making the start app non blocking
+
+          this.#runStartAction(action)
+            .then(() => this.#updateAction(actionId, { status: 'complete' }))
+            .catch(() => this.#updateAction(actionId, { status: 'failed', error: 'Action failed' }));
+
+          /*
+           * adding a delay to avoid any race condition between 2 start actions
+           * i am up for a better approach
+           */
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+
+          return;
+        }
       }
 
-      this.#updateAction(actionId, { status: action.abortSignal.aborted ? 'aborted' : 'complete' });
+      this.#updateAction(actionId, {
+        status: isStreaming ? 'running' : action.abortSignal.aborted ? 'aborted' : 'complete',
+      });
     } catch (error) {
       this.#updateAction(actionId, { status: 'failed', error: 'Action failed' });
+      logger.error(`[${action.type}]:Action failed\n\n`, error);
 
       // re-throw the error to be caught in the promise chain
       throw error;
@@ -122,35 +151,57 @@ export class ActionRunner {
   }
 
   async #runShellAction(action: ActionState) {
+    if (!window.executeShell) {
+      return ;
+    }
     if (action.type !== 'shell') {
       unreachable('Expected shell action');
     }
+    
+    const shell = this.#shellTerminal();
+    await shell.ready();
+    logger.info("配置npm镜像") ;
+    const mirror_cmd = 'npm config set registry https://registry.npmmirror.com' ;
+    await shell.executeCommand(this.runnerId.get(), mirror_cmd);
 
-    const webcontainer = await this.#webcontainer;
+    if (!shell || !shell.terminal || !shell.process) {
+      unreachable('Shell terminal not found');
+    }
+    if (action.content.includes('npx') && !(action.content.includes('--yes'))){
+      action.content = 'echo "y" | ' + action.content  ;
+    }
+    const resp = await shell.executeCommand(this.runnerId.get(), action.content);
+    logger.debug(`${action.type} Shell Response: [exit code:${resp?.exitCode}]`);
 
-    const process = await webcontainer.spawn('jsh', ['-c', action.content], {
-      env: { npm_config_yes: true },
-    });
+    if (resp?.exitCode != 0) {
+      throw new Error('Failed To Execute Shell Command');
+    }
+  }
 
-    action.abortSignal.addEventListener('abort', () => {
-      process.kill();
-    });
+  async #runStartAction(action: ActionState) {
+    if (action.type !== 'start') {
+      unreachable('Expected shell action');
+    }
 
-    process.output.pipeTo(
-      new WritableStream({
-        write(data) {
-          if (data.includes('(Y/n)')) {  
-            process.kill();
-          }else{
-            console.log(data) ;
-          }
-        },
-      }),
-    );
+    if (!this.#shellTerminal) {
+      unreachable('Shell terminal not found');
+    }
 
-    const exitCode = await process.exit;
+    const shell = this.#shellTerminal();
+    await shell.ready();
 
-    logger.debug(`Process terminated with code ${exitCode}`);
+    if (!shell || !shell.terminal || !shell.process) {
+      unreachable('Shell terminal not found');
+    }
+
+    const resp = await shell.executeCommand(this.runnerId.get(), action.content);
+    logger.debug(`${action.type} Shell Response: [exit code:${resp?.exitCode}]`);
+
+    if (resp?.exitCode != 0) {
+      throw new Error('Failed To Start Application');
+    }
+
+    return resp;
   }
 
   async #runFileAction(action: ActionState) {
@@ -181,7 +232,6 @@ export class ActionRunner {
       logger.error('Failed to write file\n\n', error);
     }
   }
-
   #updateAction(id: string, newState: ActionStateUpdate) {
     const actions = this.actions.get();
 

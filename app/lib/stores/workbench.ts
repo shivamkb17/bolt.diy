@@ -10,13 +10,17 @@ import { FilesStore, type FileMap } from './files';
 import { PreviewsStore } from './previews';
 import { TerminalStore } from './terminal';
 import JSZip from 'jszip';
-import { description } from '~/lib/persistence';
-import { extractRelativePath } from '~/utils/diff';
 import { saveAs } from 'file-saver';
+import { Octokit, type RestEndpointMethodTypes } from '@octokit/rest';
+import * as nodePath from 'node:path';
+import { extractRelativePath } from '~/utils/diff';
+import { description } from '~/lib/persistence';
+import Cookies from 'js-cookie';
 
 export interface ArtifactState {
   id: string;
   title: string;
+  type?: string;
   closed: boolean;
   runner: ActionRunner;
 }
@@ -40,7 +44,7 @@ export class WorkbenchStore {
   unsavedFiles: WritableAtom<Set<string>> = import.meta.hot?.data.unsavedFiles ?? atom(new Set<string>());
   modifiedFiles = new Set<string>();
   artifactIdList: string[] = [];
-
+  #globalExecutionQueue = Promise.resolve();
   constructor() {
     if (import.meta.hot) {
       import.meta.hot.data.artifacts = this.artifacts;
@@ -48,6 +52,10 @@ export class WorkbenchStore {
       import.meta.hot.data.showWorkbench = this.showWorkbench;
       import.meta.hot.data.currentView = this.currentView;
     }
+  }
+
+  addToExecutionQueue(callback: () => Promise<void>) {
+    this.#globalExecutionQueue = this.#globalExecutionQueue.then(() => callback());
   }
 
   get previews() {
@@ -77,6 +85,9 @@ export class WorkbenchStore {
   get showTerminal() {
     return this.#terminalStore.showTerminal;
   }
+  get boltTerminal() {
+    return this.#terminalStore.boltTerminal;
+  }
 
   toggleTerminal(value?: boolean) {
     this.#terminalStore.toggleTerminal(value);
@@ -84,6 +95,9 @@ export class WorkbenchStore {
 
   attachTerminal(terminal: ITerminal) {
     this.#terminalStore.attachTerminal(terminal);
+  }
+  attachBoltTerminal(terminal: ITerminal) {
+    this.#terminalStore.attachBoltTerminal(terminal);
   }
 
   onTerminalResize(cols: number, rows: number) {
@@ -218,7 +232,7 @@ export class WorkbenchStore {
     // TODO: what do we wanna do and how do we wanna recover from this?
   }
 
-  addArtifact({ messageId, title, id }: ArtifactCallbackData) {
+  addArtifact({ messageId, title, id, type }: ArtifactCallbackData) {
     const artifact = this.#getArtifact(messageId);
 
     if (artifact) {
@@ -233,7 +247,8 @@ export class WorkbenchStore {
       id,
       title,
       closed: false,
-      runner: new ActionRunner(webcontainer),
+      type,
+      runner: new ActionRunner(webcontainer, () => this.boltTerminal),
     });
   }
 
@@ -246,8 +261,12 @@ export class WorkbenchStore {
 
     this.artifacts.setKey(messageId, { ...artifact, ...state });
   }
+  addAction(data: ActionCallbackData) {
+    this._addAction(data);
 
-  async addAction(data: ActionCallbackData) {
+    // this.addToExecutionQueue(()=>this._addAction(data))
+  }
+  async _addAction(data: ActionCallbackData) {
     const { messageId } = data;
 
     const artifact = this.#getArtifact(messageId);
@@ -256,10 +275,17 @@ export class WorkbenchStore {
       unreachable('Artifact not found');
     }
 
-    artifact.runner.addAction(data);
+    return artifact.runner.addAction(data);
   }
 
-  async runAction(data: ActionCallbackData) {
+  runAction(data: ActionCallbackData, isStreaming: boolean = false) {
+    if (isStreaming) {
+      this._runAction(data, isStreaming);
+    } else {
+      this.addToExecutionQueue(() => this._runAction(data, isStreaming));
+    }
+  }
+  async _runAction(data: ActionCallbackData, isStreaming: boolean = false) {
     const { messageId } = data;
 
     const artifact = this.#getArtifact(messageId);
@@ -268,7 +294,33 @@ export class WorkbenchStore {
       unreachable('Artifact not found');
     }
 
-    artifact.runner.runAction(data);
+    if (data.action.type === 'file') {
+      const wc = await webcontainer;
+      const fullPath = nodePath.join(wc.workdir, data.action.filePath);
+
+      if (this.selectedFile.value !== fullPath) {
+        this.setSelectedFile(fullPath);
+      }
+
+      if (this.currentView.value !== 'code') {
+        this.currentView.set('code');
+      }
+
+      const doc = this.#editorStore.documents.get()[fullPath];
+
+      if (!doc) {
+        await artifact.runner.runAction(data, isStreaming);
+      }
+
+      this.#editorStore.updateFile(fullPath, data.action.content);
+
+      if (!isStreaming) {
+        await artifact.runner.runAction(data);
+        this.resetAllFileModifications();
+      }
+    } else {
+      await artifact.runner.runAction(data);
+    }
   }
 
   #getArtifact(id: string) {
@@ -307,6 +359,146 @@ export class WorkbenchStore {
     //save
     const content = await zip.generateAsync({ type: 'blob' });
     saveAs(content, `${uniqueProjectName}.zip`);
+  }
+
+  async syncFiles(targetHandle: FileSystemDirectoryHandle) {
+    const files = this.files.get();
+    const syncedFiles = [];
+
+    for (const [filePath, dirent] of Object.entries(files)) {
+      if (dirent?.type === 'file' && !dirent.isBinary) {
+        const relativePath = extractRelativePath(filePath);
+        const pathSegments = relativePath.split('/');
+        let currentHandle = targetHandle;
+
+        for (let i = 0; i < pathSegments.length - 1; i++) {
+          currentHandle = await currentHandle.getDirectoryHandle(pathSegments[i], { create: true });
+        }
+
+        // create or get the file
+        const fileHandle = await currentHandle.getFileHandle(pathSegments[pathSegments.length - 1], {
+          create: true,
+        });
+
+        // write the file content
+        const writable = await fileHandle.createWritable();
+        await writable.write(dirent.content);
+        await writable.close();
+
+        syncedFiles.push(relativePath);
+      }
+    }
+
+    return syncedFiles;
+  }
+
+  async pushToGitHub(repoName: string, githubUsername?: string, ghToken?: string) {
+    try {
+      // Use cookies if username and token are not provided
+      const githubToken = ghToken || Cookies.get('githubToken');
+      const owner = githubUsername || Cookies.get('githubUsername');
+
+      if (!githubToken || !owner) {
+        throw new Error('GitHub token or username is not set in cookies or provided.');
+      }
+
+      // Initialize Octokit with the auth token
+      const octokit = new Octokit({ auth: githubToken });
+
+      // Check if the repository already exists before creating it
+      let repo: RestEndpointMethodTypes['repos']['get']['response']['data'];
+
+      try {
+        const resp = await octokit.repos.get({ owner, repo: repoName });
+        repo = resp.data;
+      } catch (error) {
+        if (error instanceof Error && 'status' in error && error.status === 404) {
+          // Repository doesn't exist, so create a new one
+          const { data: newRepo } = await octokit.repos.createForAuthenticatedUser({
+            name: repoName,
+            private: false,
+            auto_init: true,
+          });
+          repo = newRepo;
+        } else {
+          console.log('cannot create repo!');
+          throw error; // Some other error occurred
+        }
+      }
+
+      // Get all files
+      const files = this.files.get();
+
+      if (!files || Object.keys(files).length === 0) {
+        throw new Error('No files found to push');
+      }
+
+      // Create blobs for each file
+      const blobs = await Promise.all(
+        Object.entries(files).map(async ([filePath, dirent]) => {
+          if (dirent?.type === 'file' && dirent.content) {
+            const { data: blob } = await octokit.git.createBlob({
+              owner: repo.owner.login,
+              repo: repo.name,
+              content: Buffer.from(dirent.content).toString('base64'),
+              encoding: 'base64',
+            });
+            return { path: extractRelativePath(filePath), sha: blob.sha };
+          }
+
+          return null;
+        }),
+      );
+
+      const validBlobs = blobs.filter(Boolean); // Filter out any undefined blobs
+
+      if (validBlobs.length === 0) {
+        throw new Error('No valid files to push');
+      }
+
+      // Get the latest commit SHA (assuming main branch, update dynamically if needed)
+      const { data: ref } = await octokit.git.getRef({
+        owner: repo.owner.login,
+        repo: repo.name,
+        ref: `heads/${repo.default_branch || 'main'}`, // Handle dynamic branch
+      });
+      const latestCommitSha = ref.object.sha;
+
+      // Create a new tree
+      const { data: newTree } = await octokit.git.createTree({
+        owner: repo.owner.login,
+        repo: repo.name,
+        base_tree: latestCommitSha,
+        tree: validBlobs.map((blob) => ({
+          path: blob!.path,
+          mode: '100644',
+          type: 'blob',
+          sha: blob!.sha,
+        })),
+      });
+
+      // Create a new commit
+      const { data: newCommit } = await octokit.git.createCommit({
+        owner: repo.owner.login,
+        repo: repo.name,
+        message: 'Initial commit from your app',
+        tree: newTree.sha,
+        parents: [latestCommitSha],
+      });
+
+      // Update the reference
+      await octokit.git.updateRef({
+        owner: repo.owner.login,
+        repo: repo.name,
+        ref: `heads/${repo.default_branch || 'main'}`, // Handle dynamic branch
+        sha: newCommit.sha,
+      });
+
+      alert(`Repository created and code pushed: ${repo.html_url}`);
+    } catch (error) {
+      console.error('Error pushing to GitHub:', error);
+      throw error; // Rethrow the error for further handling
+    }
   }
 }
 

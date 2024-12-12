@@ -1,5 +1,5 @@
 import type { Message } from 'ai';
-import React, { type RefCallback } from 'react';
+import React, { useState, useEffect, type RefCallback } from 'react';
 import { ClientOnly } from 'remix-utils/client-only';
 import { Menu } from '~/components/sidebar/Menu.client';
 import { IconButton } from '~/components/ui/IconButton';
@@ -57,6 +57,16 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     ref,
   ) => {
     const TEXTAREA_MAX_HEIGHT = chatStarted ? 400 : 200;
+    const [executeShell, setExecuteShell] = useState<boolean>(true);
+
+    const _setExecuteShell = (val: boolean) => {
+      setExecuteShell(val);
+      window.executeShell = val;
+    }
+
+    useEffect(() => {
+      window.executeShell = true;
+    }, []);
 
     return (
       <div
@@ -73,7 +83,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
             {!chatStarted && (
               <div id="intro" className="mt-[26vh] max-w-chat mx-auto">
                 <h1 className="text-3xl text-center font-bold text-bolt-elements-textPrimary mb-2">
-                 程序需求
+                  程序需求
                 </h1>
               </div>
             )}
@@ -177,7 +187,20 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                     ) : null}
                   </div>
                 </div>
-                <div className="bg-bolt-elements-background-depth-1 pb-6">{/* Ghost Element */}</div>
+                {/* Checkbox for execute_shell */}
+                <div className="flex items-center p-2">
+                  <input
+                    type="checkbox"
+                    checked={executeShell}
+                    onChange={(e) => _setExecuteShell(e.target.checked)}
+                    id="executeShellCheck"
+                    className="mr-2"
+                  />
+                  <label htmlFor="executeShellCheck" className="text-sm text-bolt-elements-textTertiary">
+                    生成代码时运行npm、npx命令
+                  </label>
+                </div>
+                <div className="bg-bolt-elements-background-depth-1 pb-1">{/* Ghost Element */}</div>
               </div>
             </div>
             {!chatStarted && (
