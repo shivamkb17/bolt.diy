@@ -23,7 +23,7 @@ export function Header() {
         <a href="/" className="text-2xl font-semibold text-accent flex items-center">
           <span className="i-bolt:stars?mask w-[46px] inline-block" />
         </a>
-        <span className="absolute right-12">
+        <span className="absolute right-36">
           <a href='https://github.com/little51/bolt.new.local' 
             target='_blank' className="underline hover:no-underline">源码</a>
         </span>
