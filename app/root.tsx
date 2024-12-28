@@ -59,6 +59,11 @@ export const Head = createHead(() => (
     <Meta />
     <Links />
     <script dangerouslySetInnerHTML={{ __html: inlineThemeCode }} />
+    <script
+      defer
+      src="https://static.cloudflareinsights.com/beacon.min.js"
+      data-cf-beacon='{"token": "e670513948ff420187e4dd56b31ff46e"}'
+    ></script>
   </>
 ));
 
