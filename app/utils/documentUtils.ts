@@ -1,22 +1,4 @@
 import JSZip from 'jszip';
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Configure PDF.js worker in a safe way
-try {
-  // Only modify if in browser environment and if it's writable
-  if (typeof window !== 'undefined' && pdfjsLib.GlobalWorkerOptions) {
-    // Check if the property is writable
-    const descriptor = Object.getOwnPropertyDescriptor(pdfjsLib, 'GlobalWorkerOptions');
-    if (descriptor && descriptor.writable) {
-      // @ts-ignore - Only set workerSrc if property is writable
-      pdfjsLib.GlobalWorkerOptions = { workerSrc: null };
-    } else {
-      console.log('PDF.js GlobalWorkerOptions is read-only, skipping configuration');
-    }
-  }
-} catch (e) {
-  console.warn('Failed to modify PDF.js worker configuration:', e);
-}
 
 /*
  * Flag to use only fallback method
@@ -218,7 +200,8 @@ async function extractPdfTextSimple(file: File | Blob): Promise<string> {
 }
 
 /**
- * Extracts text from a PDF file
+ * Extracts text from a PDF file using a simplified method
+ * that doesn't depend on the pdfjs-dist library
  *
  * @param file The PDF file
  * @returns A Promise with the extracted text
@@ -226,7 +209,7 @@ async function extractPdfTextSimple(file: File | Blob): Promise<string> {
 export async function extractTextFromPDF(file: File | Blob): Promise<string> {
   console.log('Extracting text from PDF using simplified method');
 
-  // Use only the simplified method that doesn't depend on the worker
+  // Use the simplified method that doesn't depend on external libraries
   return extractPdfTextSimple(file);
 }
 
