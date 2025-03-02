@@ -274,45 +274,43 @@ function File({
   fileHistory = {},
 }: FileProps) {
   const fileModifications = fileHistory[fullPath];
+  let additions = 0;
+  let deletions = 0;
 
-  // const hasModifications = fileModifications !== undefined;
-
-  // Calculate added and removed lines from the most recent changes
-  const { additions, deletions } = useMemo(() => {
-    if (!fileModifications?.originalContent) {
-      return { additions: 0, deletions: 0 };
-    }
-
-    // Usar a mesma lógica do DiffView para processar as mudanças
+  // Verificar se existem modificações para computar as adições e remoções
+  if (fileModifications) {
+    // Use the same logic as DiffView to process changes
     const normalizedOriginal = fileModifications.originalContent.replace(/\r\n/g, '\n');
     const normalizedCurrent =
       fileModifications.versions[fileModifications.versions.length - 1]?.content.replace(/\r\n/g, '\n') || '';
 
-    if (normalizedOriginal === normalizedCurrent) {
-      return { additions: 0, deletions: 0 };
+    // Calcular as diferenças apenas se os conteúdos são diferentes
+    if (normalizedOriginal !== normalizedCurrent) {
+      const changes = diffLines(normalizedOriginal, normalizedCurrent, {
+        newlineIsToken: false,
+        ignoreWhitespace: true,
+        ignoreCase: false,
+      });
+
+      const stats = changes.reduce(
+        (acc: { additions: number; deletions: number }, change: Change) => {
+          if (change.added) {
+            acc.additions += change.value.split('\n').length;
+          }
+
+          if (change.removed) {
+            acc.deletions += change.value.split('\n').length;
+          }
+
+          return acc;
+        },
+        { additions: 0, deletions: 0 },
+      );
+
+      additions = stats.additions;
+      deletions = stats.deletions;
     }
-
-    const changes = diffLines(normalizedOriginal, normalizedCurrent, {
-      newlineIsToken: false,
-      ignoreWhitespace: true,
-      ignoreCase: false,
-    });
-
-    return changes.reduce(
-      (acc: { additions: number; deletions: number }, change: Change) => {
-        if (change.added) {
-          acc.additions += change.value.split('\n').length;
-        }
-
-        if (change.removed) {
-          acc.deletions += change.value.split('\n').length;
-        }
-
-        return acc;
-      },
-      { additions: 0, deletions: 0 },
-    );
-  }, [fileModifications]);
+  }
 
   const showStats = additions > 0 || deletions > 0;
 

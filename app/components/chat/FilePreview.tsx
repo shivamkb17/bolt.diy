@@ -11,21 +11,60 @@ const FilePreview: React.FC<FilePreviewProps> = ({ files, imageDataList, onRemov
     return null;
   }
 
+  // Function to get the icon based on file type
+  const getFileIcon = (fileType: string) => {
+    if (fileType.startsWith('image/')) {
+      return 'i-ph:image';
+    }
+
+    if (fileType.includes('pdf')) {
+      return 'i-ph:file-pdf';
+    }
+
+    if (fileType.includes('text') || fileType.includes('txt')) {
+      return 'i-ph:file-text';
+    }
+
+    if (fileType.includes('json') || fileType.includes('javascript') || fileType.includes('js')) {
+      return 'i-ph:file-code';
+    }
+
+    if (fileType.includes('csv') || fileType.includes('excel') || fileType.includes('spreadsheet')) {
+      return 'i-ph:file-spreadsheet';
+    }
+
+    return 'i-ph:file-doc';
+  };
+
   return (
-    <div className="flex flex-row overflow-x-auto -mt-2">
+    <div className="flex flex-wrap overflow-x-auto -mt-2 gap-2">
       {files.map((file, index) => (
-        <div key={file.name + file.size} className="mr-2 relative">
-          {imageDataList[index] && (
-            <div className="relative pt-4 pr-4">
+        <div key={file.name + file.size} className="relative">
+          <div className="relative pt-4 pr-4">
+            {imageDataList[index] === 'loading-image' ? (
+              // Renders loading indicator for images in process
+              <div className="flex flex-col items-center justify-center bg-bolt-elements-background-depth-3 rounded-md p-2 min-w-[100px] h-[80px]">
+                <div className="i-svg-spinners:90-ring-with-bg text-bolt-elements-loader-progress text-xl animate-spin"></div>
+                <div className="text-xs text-bolt-elements-textSecondary mt-1">Loading...</div>
+              </div>
+            ) : imageDataList[index] && imageDataList[index] !== 'non-image' ? (
+              // Renders image for already loaded image types
               <img src={imageDataList[index]} alt={file.name} className="max-h-20" />
-              <button
-                onClick={() => onRemove(index)}
-                className="absolute top-1 right-1 z-10 bg-black rounded-full w-5 h-5 shadow-md hover:bg-gray-900 transition-colors flex items-center justify-center"
-              >
-                <div className="i-ph:x w-3 h-3 text-gray-200" />
-              </button>
-            </div>
-          )}
+            ) : (
+              // Renders icon for other file types
+              <div className="flex flex-col items-center justify-center bg-bolt-elements-background-depth-3 rounded-md p-2 min-w-[100px] h-[80px]">
+                <div className={`${getFileIcon(file.type)} w-6 h-6 text-bolt-elements-textSecondary`} />
+                <div className="text-xs text-bolt-elements-textSecondary mt-1 max-w-[100px] truncate">{file.name}</div>
+                <div className="text-xs text-bolt-elements-textTertiary">{(file.size / 1024).toFixed(0)} KB</div>
+              </div>
+            )}
+            <button
+              onClick={() => onRemove(index)}
+              className="absolute top-1 right-1 z-10 bg-black rounded-full w-5 h-5 shadow-md hover:bg-gray-900 transition-colors flex items-center justify-center"
+            >
+              <div className="i-ph:x w-3 h-3 text-gray-200" />
+            </button>
+          </div>
         </div>
       ))}
     </div>
