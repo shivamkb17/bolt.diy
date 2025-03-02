@@ -379,7 +379,7 @@ export const ChatImpl = memo(
             );
           }
 
-          // For other files, maintain normal behavior
+          // For text files, use standard format
           return (
             `[File attached: ${fileName} (${fileSizeKB} KB)]\n\n` +
             `Content of file ${fileName}:\n` +

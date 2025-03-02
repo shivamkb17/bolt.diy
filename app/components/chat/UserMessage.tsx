@@ -10,85 +10,12 @@ function getFileIcon(fileName: string) {
   const extension = fileName.split('.').pop()?.toLowerCase() || '';
 
   switch (extension) {
-    // JavaScript/TypeScript
-    case 'js':
-    case 'jsx':
-    case 'ts':
-    case 'tsx':
-      return 'i-ph:file-js text-yellow-400';
-
-    // Markup and style
-    case 'html':
-    case 'xml':
-      return 'i-ph:file-html text-orange-400';
-    case 'css':
-    case 'scss':
-    case 'sass':
-      return 'i-ph:file-css text-blue-400';
-
-    // Data and configuration
-    case 'json':
-    case 'yaml':
-    case 'yml':
-    case 'conf':
-    case 'ini':
-    case 'env':
-      return 'i-ph:brackets-curly text-green-400';
-    case 'csv':
-      return 'i-ph:table text-blue-300';
-
-    // Programming languages
-    case 'py':
-      return 'i-ph:file-py text-blue-500';
-    case 'c':
-    case 'cpp':
-    case 'h':
-      return 'i-ph:code text-blue-600';
-    case 'java':
-      return 'i-ph:code text-red-500';
-    case 'rb':
-      return 'i-ph:gem text-red-400';
-    case 'php':
-      return 'i-ph:elephant text-purple-500';
-    case 'go':
-      return 'i-ph:code text-cyan-400';
-    case 'rs':
-      return 'i-ph:code text-orange-600';
-    case 'swift':
-      return 'i-ph:code text-orange-500';
-
-    // Scripts
-    case 'sh':
-    case 'bat':
-    case 'ps1':
-      return 'i-ph:terminal text-green-500';
-
     // Documents
     case 'md':
     case 'txt':
-    case 'rtf':
       return 'i-ph:file-text text-amber-400';
     case 'docx':
       return 'i-ph:file-doc text-blue-500';
-    case 'xlsx':
-      return 'i-ph:file-xls text-green-600';
-    case 'pptx':
-      return 'i-ph:file-ppt text-red-600';
-
-    // Logs
-    case 'log':
-    case 'gitignore':
-      return 'i-ph:list-bullets text-gray-400';
-
-    // Images
-    case 'jpg':
-    case 'jpeg':
-    case 'png':
-    case 'gif':
-    case 'svg':
-      return 'i-ph:image text-green-500';
-
-    // Specific documents
     case 'pdf':
       return 'i-ph:file-pdf text-red-500';
 

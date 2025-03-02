@@ -17,23 +17,25 @@ const FilePreview: React.FC<FilePreviewProps> = ({ files, imageDataList, onRemov
       return 'i-ph:image';
     }
 
-    if (fileType.includes('pdf')) {
+    const fileName = fileType.toLowerCase();
+
+    if (fileName.includes('pdf') || fileName.endsWith('.pdf')) {
       return 'i-ph:file-pdf';
     }
 
-    if (fileType.includes('text') || fileType.includes('txt')) {
+    if (fileName.includes('docx') || fileName.endsWith('.docx')) {
+      return 'i-ph:file-doc';
+    }
+
+    if (fileName.includes('text') || fileName.includes('txt') || fileName.endsWith('.txt')) {
       return 'i-ph:file-text';
     }
 
-    if (fileType.includes('json') || fileType.includes('javascript') || fileType.includes('js')) {
-      return 'i-ph:file-code';
+    if (fileName.endsWith('.md')) {
+      return 'i-ph:file-text';
     }
 
-    if (fileType.includes('csv') || fileType.includes('excel') || fileType.includes('spreadsheet')) {
-      return 'i-ph:file-spreadsheet';
-    }
-
-    return 'i-ph:file-doc';
+    return 'i-ph:file-text';
   };
 
   return (

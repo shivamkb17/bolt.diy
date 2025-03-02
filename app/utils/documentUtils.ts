@@ -1,10 +1,19 @@
 import JSZip from 'jszip';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Disable the worker completely
+// Configure PDF.js worker in a safe way
 try {
-  // @ts-ignore - Forcing a different configuration to avoid worker errors
-  pdfjsLib.GlobalWorkerOptions = { workerSrc: null };
+  // Only modify if in browser environment and if it's writable
+  if (typeof window !== 'undefined' && pdfjsLib.GlobalWorkerOptions) {
+    // Check if the property is writable
+    const descriptor = Object.getOwnPropertyDescriptor(pdfjsLib, 'GlobalWorkerOptions');
+    if (descriptor && descriptor.writable) {
+      // @ts-ignore - Only set workerSrc if property is writable
+      pdfjsLib.GlobalWorkerOptions = { workerSrc: null };
+    } else {
+      console.log('PDF.js GlobalWorkerOptions is read-only, skipping configuration');
+    }
+  }
 } catch (e) {
   console.warn('Failed to modify PDF.js worker configuration:', e);
 }
