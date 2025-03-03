@@ -19,6 +19,7 @@ import AmazonBedrockProvider from './providers/amazon-bedrock';
 import GithubProvider from './providers/github';
 import PollinationsProvider from './providers/pollinations';
 
+import VertexAIProvider from './providers/vertex-ai';
 export {
   AnthropicProvider,
   CloudflareProvider,
@@ -40,4 +41,5 @@ export {
   AmazonBedrockProvider,
   GithubProvider,
   PollinationsProvider,
+  VertexAIProvider
 };
