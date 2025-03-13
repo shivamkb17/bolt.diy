@@ -6,7 +6,7 @@ import { classNames } from '~/utils/classNames';
 import { toast } from 'react-toastify';
 import { PromptLibrary } from '~/lib/common/prompt-library';
 import Select from 'react-select';
-import type { StylesConfig, MultiValue, ActionMeta } from 'react-select';
+import type { StylesConfig, MultiValue } from 'react-select';
 import { components } from 'react-select';
 
 interface FeatureToggle {

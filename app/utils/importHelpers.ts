@@ -26,7 +26,7 @@ const convertGitHubUrl = (url: string): string => {
     }
 
     return url;
-  } catch (_error) {
+  } catch {
     return url;
   }
 };
@@ -88,7 +88,7 @@ export const fetchFromUrl = async (
             content: typeof jsonData === 'string' ? jsonData : JSON.stringify(jsonData, null, 2),
             metadata: typeof jsonData === 'object' && jsonData !== null ? jsonData : undefined,
           };
-        } catch (_error) {
+        } catch {
           throw new Error('Failed to parse JSON content');
         }
 
@@ -104,7 +104,7 @@ export const fetchFromUrl = async (
             content: records.map((record: any) => record.content || '').join('\n'),
             metadata: { records },
           };
-        } catch (_error) {
+        } catch {
           throw new Error('Failed to parse CSV content');
         }
 
@@ -121,7 +121,7 @@ export const fetchFromUrl = async (
             content: textContent,
             metadata: { originalHtml: html },
           };
-        } catch (_error) {
+        } catch {
           throw new Error('Failed to extract text from HTML');
         }
 

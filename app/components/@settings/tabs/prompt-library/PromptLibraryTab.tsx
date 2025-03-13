@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { classNames } from '~/utils/classNames';
 import { PromptLibrary, type CustomPrompt } from '~/lib/common/prompt-library';
@@ -226,11 +226,13 @@ export default function PromptLibraryTab() {
 
     if (!editingCategory.new.trim()) {
       toast.error('Category name is required');
+
       return;
     }
 
     if (editingCategory.original !== editingCategory.new && categories.includes(editingCategory.new.trim())) {
       toast.error('Category already exists');
+
       return;
     }
 
@@ -249,13 +251,13 @@ export default function PromptLibraryTab() {
         }),
       );
 
-      logStore.logSystem(`Renamed category: ${editingCategory.original} to ${editingCategory.new}`);
-      toast.success('Category updated successfully');
       setEditingCategory(null);
       await loadPrompts();
-    } catch (error) {
-      console.error('Error updating category:', error);
+    } catch (_error) {
+      console.error('Error updating category:', _error);
       toast.error('Failed to update category');
+
+      return;
     }
   };
 
@@ -300,83 +302,6 @@ export default function PromptLibraryTab() {
     } catch (error) {
       console.error('Error deleting category:', error);
       toast.error('Failed to delete category');
-    }
-  };
-
-  // Handle clearing all custom categories
-  const handleClearCustomCategories = async () => {
-    if (
-      !window.confirm(
-        'Are you sure you want to remove all custom categories? All custom prompts will be moved to the "Custom" category.',
-      )
-    ) {
-      return;
-    }
-
-    try {
-      // Find all custom prompts and set their category to "Custom"
-      const prompts = await PromptLibrary.getCustomPrompts();
-      let updatedCount = 0;
-
-      await Promise.all(
-        prompts.map(async (prompt: CustomPrompt) => {
-          const isSystemCategory = ['Development', 'Writing', 'Business', 'Education', 'Custom'].includes(
-            prompt.category,
-          );
-
-          if (!isSystemCategory) {
-            await PromptLibrary.updateCustomPrompt(prompt.id, {
-              ...prompt,
-              category: 'Custom',
-            });
-            updatedCount++;
-          }
-        }),
-      );
-
-      logStore.logSystem(`Cleared all custom categories (${updatedCount} prompts updated)`);
-      toast.success(
-        `All custom categories deleted. ${updatedCount} ${updatedCount === 1 ? 'prompt' : 'prompts'} moved to "Custom" category.`,
-      );
-
-      setActiveCategory(null);
-      await loadPrompts();
-    } catch (error) {
-      console.error('Error clearing custom categories:', error);
-      toast.error('Failed to clear custom categories');
-    }
-  };
-
-  // Handle clearing all custom prompts/rules
-  const handleClearCustomContent = async () => {
-    if (!window.confirm(`Are you sure you want to delete ALL custom items? This cannot be undone.`)) {
-      return;
-    }
-
-    try {
-      // Get all custom prompts and delete them
-      const prompts = await PromptLibrary.getCustomPrompts();
-      let deletedCount = 0;
-
-      await Promise.all(
-        prompts.map(async (prompt: CustomPrompt) => {
-          await PromptLibrary.deleteCustomPrompt(prompt.id);
-          deletedCount++;
-        }),
-      );
-
-      // Reset to default prompt if the current one was deleted
-      if (promptId !== 'default' && !systemPrompts.find((p) => p.id === promptId)) {
-        setPromptId('default');
-      }
-
-      logStore.logSystem(`Cleared all custom items (${deletedCount} items deleted)`);
-      toast.success(`All custom items deleted successfully.`);
-
-      await loadPrompts();
-    } catch (error) {
-      console.error('Error clearing custom content:', error);
-      toast.error('Failed to clear custom content');
     }
   };
 
@@ -1071,7 +996,7 @@ export default function PromptLibraryTab() {
 
             <ScrollArea className="max-h-[60vh] pr-4">
               <div className="space-y-6">
-                {/* Kategori Listesi */}
+                {/* Category List */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Categories</h3>
@@ -1217,6 +1142,7 @@ export default function PromptLibraryTab() {
               <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-white">Import from URL</DialogTitle>
             </div>
 
+            {/* Import Form */}
             <DialogDescription className="mb-6 text-gray-500 dark:text-gray-400">
               Import prompts or rules from a URL. Supports various formats including text, JSON, CSV, and HTML.
             </DialogDescription>

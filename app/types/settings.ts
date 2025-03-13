@@ -1,4 +1,4 @@
-import type { TabType, WindowType, UserTabConfig } from '~/components/@settings/core/types';
+import type { WindowType, UserTabConfig } from '~/components/@settings/core/types';
 
 export interface TabConfiguration {
   userTabs: UserTabConfig[];

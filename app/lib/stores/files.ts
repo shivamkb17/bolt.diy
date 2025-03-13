@@ -1,7 +1,6 @@
 import type { PathWatcherEvent, WebContainer } from '@webcontainer/api';
 import { map, type MapStore } from 'nanostores';
-import { Buffer } from 'node:buffer';
-import { path } from '~/utils/path';
+import { path as nodePath } from '~/utils/path';
 import { bufferWatchEvents } from '~/utils/buffer';
 import { WORK_DIR } from '~/utils/constants';
 import { computeFileModifications } from '~/utils/diff';
@@ -106,7 +105,7 @@ export class FilesStore {
     const webcontainer = await this.#webcontainer;
 
     try {
-      const relativePath = path.relative(webcontainer.workdir, filePath);
+      const relativePath = nodePath.relative(webcontainer.workdir, filePath);
 
       if (!relativePath) {
         throw new Error(`EINVAL: invalid file path, write '${relativePath}'`);

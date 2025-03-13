@@ -274,7 +274,6 @@ function File({
   fileHistory = {},
 }: FileProps) {
   const fileModifications = fileHistory[fullPath];
-  const hasModifications = fileModifications?.changes?.length > 0;
 
   // Calculate added and removed lines from the most recent changes
   const { additions, deletions } = useMemo(() => {

@@ -47,8 +47,8 @@ export function UrlImportForm({ onClose, defaultType = 'prompt' }: UrlImportForm
     try {
       const loadedCategories = await getCategories(config.type);
       setCategories(loadedCategories);
-    } catch (_error) {
-      console.error('Error loading categories:', _error);
+    } catch {
+      console.error('Error loading categories');
       toast.error('Failed to load categories');
     }
   };
@@ -61,7 +61,7 @@ export function UrlImportForm({ onClose, defaultType = 'prompt' }: UrlImportForm
         try {
           await handleImport(data.content, data.metadata);
           toast.success('Content updated from URL');
-        } catch (error) {
+        } catch {
           toast.error('Failed to update content from URL');
         }
       });
@@ -198,16 +198,9 @@ export function UrlImportForm({ onClose, defaultType = 'prompt' }: UrlImportForm
         autoCheck: false,
       });
       onClose?.();
-    } catch (error) {
-      if (error instanceof Error) {
-        // Show specific error message
-        toast.error(error.message);
-      } else {
-        // Fallback error message
-        toast.error('Failed to import content. Please try again.');
-      }
-
-      console.error('Import error:', error);
+    } catch {
+      // Show fallback error message
+      toast.error('Failed to import content. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

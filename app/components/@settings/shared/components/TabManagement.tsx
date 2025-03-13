@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useSettings } from '~/lib/hooks/useSettings';
-import { Button } from '~/components/ui/Button';
 import { motion } from 'framer-motion';
 import { useStore } from '@nanostores/react';
 import { Switch } from '~/components/ui/Switch';
@@ -73,7 +71,6 @@ export const TabManagement = () => {
   const { setSelectedTab } = useSettingsStore();
 
   const handleTabVisibilityChange = (tabId: TabType, checked: boolean) => {
-    const _isDefaultTab = DEFAULT_USER_TABS.includes(tabId);
     const currentTab = tabConfiguration.userTabs.find((tab) => tab.id === tabId);
 
     const newTabConfig: UserTabConfig = {

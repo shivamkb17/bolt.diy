@@ -20,7 +20,7 @@ export interface CustomPrompt {
 }
 
 export class PromptLibrary {
-  private static readonly SYSTEM_PROMPTS: CustomPrompt[] = [];
+  private static readonly _systemPrompts: CustomPrompt[] = [];
 
   static library: Record<
     string,
@@ -43,7 +43,7 @@ export class PromptLibrary {
   };
 
   static getList(): CustomPrompt[] {
-    return this.SYSTEM_PROMPTS;
+    return this._systemPrompts;
   }
 
   static async getCustomPrompts(): Promise<CustomPrompt[]> {
@@ -58,8 +58,9 @@ export class PromptLibrary {
         isSystem: p.isSystem,
         isActive: p.isActive,
       }));
-    } catch (_error) {
-      console.error('Error getting prompts:', _error);
+    } catch (err) {
+      // Log the error for debugging but don't expose it
+      console.error('Error getting prompts:', err instanceof Error ? err.message : 'Unknown error');
       return [];
     }
   }
@@ -68,8 +69,8 @@ export class PromptLibrary {
     try {
       const categories = await promptDB.getAllCategories();
       return categories.map((c) => c.name).sort();
-    } catch (_error) {
-      console.error('Error getting categories:', _error);
+    } catch {
+      console.error('Error getting categories');
       return [];
     }
   }

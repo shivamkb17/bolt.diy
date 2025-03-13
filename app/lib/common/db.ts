@@ -22,15 +22,21 @@ interface PromptDBSchema extends DBSchema {
       name: string;
       type: 'system' | 'custom';
       createdAt: Date;
+      isDefault?: boolean;
     };
   };
 }
+
+const DEFAULT_CATEGORIES = ['Development', 'Writing', 'Business', 'Education', 'Custom'];
 
 export class DB {
   private static _instance: DB;
   private _db: IDBPDatabase<PromptDBSchema> | null = null;
 
-  private constructor() {}
+  // Private constructor for singleton pattern - initialization is done in connect()
+  private constructor() {
+    // Initialization is done in connect() method
+  }
 
   static getInstance(): DB {
     if (!DB._instance) {
@@ -49,7 +55,17 @@ export class DB {
           promptStore.createIndex('by-category', 'category');
 
           // Categories store
-          db.createObjectStore('categories', { keyPath: 'name' });
+          const categoryStore = db.createObjectStore('categories', { keyPath: 'name' });
+          
+          // Add default categories
+          DEFAULT_CATEGORIES.forEach(name => {
+            categoryStore.put({
+              name,
+              type: 'system',
+              createdAt: new Date(),
+              isDefault: true
+            });
+          });
         },
       });
     }
